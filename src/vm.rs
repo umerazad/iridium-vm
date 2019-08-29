@@ -57,6 +57,11 @@ impl VM {
                 let reg2 = self.registers[self.next_8_bits() as usize];
                 self.registers[self.next_8_bits() as usize] = reg1 + reg2;
             }
+            Opcode::SUB => {
+                let reg1 = self.registers[self.next_8_bits() as usize];
+                let reg2 = self.registers[self.next_8_bits() as usize];
+                self.registers[self.next_8_bits() as usize] = reg1 - reg2;
+            }
             Opcode::MUL => {
                 let reg1 = self.registers[self.next_8_bits() as usize];
                 let reg2 = self.registers[self.next_8_bits() as usize];
@@ -142,6 +147,19 @@ mod tests {
         assert_eq!(vm.registers[0], 10);
         assert_eq!(vm.registers[1], 10);
         assert_eq!(vm.registers[2], 100);
+    }
+
+    #[test]
+    fn test_sub() {
+        let mut vm = VM::new();
+        // LOAD $0 10 -> [1, 0, 0, 100]
+        // LOAD $1 20 -> [1, 1, 0, 10]
+        // SUB $0 $1 $2 -> [4, 0, 1, 2]
+        vm.program = vec![1, 0, 0, 100, 1, 1, 0, 10, 4, 0, 1, 2];
+        vm.run();
+        assert_eq!(vm.registers[0], 100);
+        assert_eq!(vm.registers[1], 10);
+        assert_eq!(vm.registers[2], 90);
     }
 
     #[test]
