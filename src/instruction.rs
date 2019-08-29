@@ -12,8 +12,12 @@ pub enum Opcode {
     LOAD,
 
     // Add operation. It operates on registers.
-    //      ADD $0 $1 $3 where $3 = $0 + $1
+    //      ADD $0 $1 $2 where $2 = $0 + $1
     ADD,
+
+    // Multiply. It operates on registers.
+    //      MUL $0 $1 $2 where $2 = $0 * $1
+    MUL,
 }
 
 /// Instruction struct represents an instruction for the VM. We support the following
@@ -42,6 +46,7 @@ impl From<u8> for Opcode {
             0 => Opcode::HLT,
             1 => Opcode::LOAD,
             2 => Opcode::ADD,
+            3 => Opcode::MUL,
             _ => Opcode::IGL,
         }
     }
@@ -62,5 +67,6 @@ mod tests {
         assert_eq!(Opcode::HLT, Opcode::from(0));
         assert_eq!(Opcode::LOAD, Opcode::from(1));
         assert_eq!(Opcode::ADD, Opcode::from(2));
+        assert_eq!(Opcode::MUL, Opcode::from(3));
     }
 }

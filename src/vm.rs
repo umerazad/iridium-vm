@@ -57,6 +57,12 @@ impl VM {
                 let reg2 = self.registers[self.next_8_bits() as usize];
                 self.registers[self.next_8_bits() as usize] = reg1 + reg2;
             }
+            Opcode::MUL => {
+                let reg1 = self.registers[self.next_8_bits() as usize];
+                let reg2 = self.registers[self.next_8_bits() as usize];
+                self.registers[self.next_8_bits() as usize] = reg1 * reg2;
+            }
+
             _ => {
                 println!("Unrecognized opcode. Terminating");
                 is_done = true;
@@ -123,6 +129,19 @@ mod tests {
         assert_eq!(vm.registers[0], 10);
         assert_eq!(vm.registers[1], 10);
         assert_eq!(vm.registers[2], 20);
+    }
+
+    #[test]
+    fn test_mul() {
+        let mut vm = VM::new();
+        // LOAD $0 10 -> [1, 0, 0, 10]
+        // LOAD $1 20 -> [1, 1, 0, 10]
+        // MUL $0 $1 $2 -> [3, 0, 1, 2]
+        vm.program = vec![1, 0, 0, 10, 1, 1, 0, 10, 3, 0, 1, 2];
+        vm.run();
+        assert_eq!(vm.registers[0], 10);
+        assert_eq!(vm.registers[1], 10);
+        assert_eq!(vm.registers[2], 100);
     }
 
     #[test]
