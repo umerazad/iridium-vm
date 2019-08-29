@@ -38,10 +38,11 @@ impl VM {
             return true;
         }
 
+        let mut is_done = false;
         match self.decode_opcode() {
             Opcode::HLT => {
                 println!("HLT encountered. Terminating.");
-                return true;
+                is_done = true;
             }
             Opcode::LOAD => {
                 // Load is of the form:
@@ -50,13 +51,18 @@ impl VM {
                 let reg = self.next_8_bits() as usize;
                 let num = self.next_16_bits();
                 self.registers[reg] = num as i32;
-                return false;
+            }
+            Opcode::ADD => {
+                let reg1 = self.registers[self.next_8_bits() as usize];
+                let reg2 = self.registers[self.next_8_bits() as usize];
+                self.registers[self.next_8_bits() as usize] = reg1 + reg2;
             }
             _ => {
                 println!("Unrecognized opcode. Terminating");
-                return true;
+                is_done = true;
             }
         }
+        is_done
     }
 
     fn next_8_bits(&mut self) -> u8 {
@@ -104,6 +110,19 @@ mod tests {
         vm.program = vec![1, 0, 1, 244];
         vm.run();
         assert_eq!(vm.registers[0], 500);
+    }
+
+    #[test]
+    fn test_add() {
+        let mut vm = VM::new();
+        // LOAD $0 10 -> [1, 0, 0, 10]
+        // LOAD $1 20 -> [1, 1, 0, 10]
+        // ADD $0 $1 $2 -> [2, 0, 1, 2]
+        vm.program = vec![1, 0, 0, 10, 1, 1, 0, 10, 2, 0, 1, 2];
+        vm.run();
+        assert_eq!(vm.registers[0], 10);
+        assert_eq!(vm.registers[1], 10);
+        assert_eq!(vm.registers[2], 20);
     }
 
     #[test]
