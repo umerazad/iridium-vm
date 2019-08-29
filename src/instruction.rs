@@ -1,4 +1,5 @@
 /// Opcode enum represents the opcodes for all the instructions supported by the VM.
+/// Each opcode is represented by a u8 in the instruction format.
 #[derive(Debug, PartialEq)]
 pub enum Opcode {
     // Halt instruction.
@@ -6,9 +7,20 @@ pub enum Opcode {
 
     // Illegal instruction.
     IGL,
+
+    // Load a value into register.
+    LOAD,
 }
 
-/// Instruction struct represents an instruction for the VM.
+/// Instruction struct represents an instruction for the VM. We support the following
+/// instruction formats.
+///
+/// 1. opcode: 8bits
+/// 2. opcode: 8bits, register: 8bits
+/// 3. opcode: 8bits register: 8bits: operand1: 8bits
+/// 4. opcode: 8bits register: 8bits: operand1: 8bits: operand2: 8bits
+/// 5. opcode: 8bits register: 8bits: operand1: 16bits
+///
 #[derive(Debug, PartialEq)]
 pub struct Instruction {
     opcode: Opcode,
@@ -24,6 +36,7 @@ impl From<u8> for Opcode {
     fn from(v: u8) -> Self {
         match v {
             0 => Opcode::HLT,
+            1 => Opcode::LOAD,
             _ => Opcode::IGL,
         }
     }
@@ -42,6 +55,6 @@ mod tests {
     #[test]
     fn test_opcode_from_u8() {
         assert_eq!(Opcode::HLT, Opcode::from(0));
-        assert_eq!(Opcode::IGL, Opcode::from(1));
+        assert_eq!(Opcode::LOAD, Opcode::from(1));
     }
 }
