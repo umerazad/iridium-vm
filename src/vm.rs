@@ -2,7 +2,7 @@ use crate::instruction::Opcode;
 
 const MAX_REGISTERS: usize = 32;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct VM {
     registers: [i32; MAX_REGISTERS],
     pc: usize,
@@ -78,6 +78,14 @@ impl VM {
             Opcode::JMP => {
                 let target = self.registers[self.next_8_bits() as usize];
                 self.pc = target as usize;
+            }
+            Opcode::JMPF => {
+                let target = self.registers[self.next_8_bits() as usize];
+                self.pc += target as usize;
+            }
+            Opcode::JMPB => {
+                let target = self.registers[self.next_8_bits() as usize];
+                self.pc -= target as usize;
             }
             _ => {
                 println!("Unrecognized opcode. Terminating");
@@ -194,6 +202,34 @@ mod tests {
         vm.program = vec![6, 0, 0, 0];
         vm.run_once();
         assert_eq!(vm.pc, 1);
+    }
+
+    #[test]
+    fn test_jmpf() {
+        let mut vm = VM::new();
+        vm.registers[0] = 2;
+        // JMPF $0
+        // 0, 0
+        // JMP $0
+        vm.program = vec![7, 0, 0, 0, 6, 0, 0, 0];
+        vm.run_once();
+        assert_eq!(vm.pc, 4);
+    }
+
+    #[test]
+    fn test_jmpb() {
+        let mut vm = VM::new();
+        vm.registers[0] = 4;
+        vm.registers[1] = 2;
+        // JMPB $0
+        // 0, 0
+        // JMPB $0
+        //
+        //  This is practically a loop {} given that JMPB is 2 bytes and we are asking it to go
+        //  back 2-bytes.
+        vm.program = vec![6, 0, 0, 0, 8, 1, 0, 0];
+        vm.run_once();
+        assert_eq!(vm.pc, 4);
     }
 
     #[test]

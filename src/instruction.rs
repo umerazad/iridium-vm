@@ -30,6 +30,12 @@ pub enum Opcode {
 
     // Absolute Jump. It reads the offset from the operand register.
     JMP,
+
+    // Relative jump forward.
+    JMPF,
+
+    // Relative jump backward.
+    JMPB,
 }
 
 /// Instruction struct represents an instruction for the VM. We support the following
@@ -62,6 +68,8 @@ impl From<u8> for Opcode {
             4 => Opcode::SUB,
             5 => Opcode::DIV,
             6 => Opcode::JMP,
+            7 => Opcode::JMPF,
+            8 => Opcode::JMPB,
             _ => Opcode::IGL,
         }
     }
@@ -86,5 +94,7 @@ mod tests {
         assert_eq!(Opcode::SUB, Opcode::from(4));
         assert_eq!(Opcode::DIV, Opcode::from(5));
         assert_eq!(Opcode::JMP, Opcode::from(6));
+        assert_eq!(Opcode::JMPF, Opcode::from(7));
+        assert_eq!(Opcode::JMPB, Opcode::from(8));
     }
 }
