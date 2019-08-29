@@ -7,6 +7,7 @@ pub struct VM {
     registers: [i32; MAX_REGISTERS],
     pc: usize,
     program: Vec<u8>,
+    remainder: u32,
 }
 
 impl VM {
@@ -16,6 +17,7 @@ impl VM {
             registers: [0; MAX_REGISTERS],
             pc: 0,
             program: vec![],
+            remainder: 0,
         }
     }
 
@@ -67,7 +69,12 @@ impl VM {
                 let reg2 = self.registers[self.next_8_bits() as usize];
                 self.registers[self.next_8_bits() as usize] = reg1 * reg2;
             }
-
+            Opcode::DIV => {
+                let reg1 = self.registers[self.next_8_bits() as usize];
+                let reg2 = self.registers[self.next_8_bits() as usize];
+                self.registers[self.next_8_bits() as usize] = reg1 / reg2;
+                self.remainder = (reg1 % reg2) as u32;
+            }
             _ => {
                 println!("Unrecognized opcode. Terminating");
                 is_done = true;
@@ -127,7 +134,7 @@ mod tests {
     fn test_add() {
         let mut vm = VM::new();
         // LOAD $0 10 -> [1, 0, 0, 10]
-        // LOAD $1 20 -> [1, 1, 0, 10]
+        // LOAD $1 10 -> [1, 1, 0, 10]
         // ADD $0 $1 $2 -> [2, 0, 1, 2]
         vm.program = vec![1, 0, 0, 10, 1, 1, 0, 10, 2, 0, 1, 2];
         vm.run();
@@ -140,7 +147,7 @@ mod tests {
     fn test_mul() {
         let mut vm = VM::new();
         // LOAD $0 10 -> [1, 0, 0, 10]
-        // LOAD $1 20 -> [1, 1, 0, 10]
+        // LOAD $1 10 -> [1, 1, 0, 10]
         // MUL $0 $1 $2 -> [3, 0, 1, 2]
         vm.program = vec![1, 0, 0, 10, 1, 1, 0, 10, 3, 0, 1, 2];
         vm.run();
@@ -152,14 +159,28 @@ mod tests {
     #[test]
     fn test_sub() {
         let mut vm = VM::new();
-        // LOAD $0 10 -> [1, 0, 0, 100]
-        // LOAD $1 20 -> [1, 1, 0, 10]
+        // LOAD $0 100 -> [1, 0, 0, 100]
+        // LOAD $1 10 -> [1, 1, 0, 10]
         // SUB $0 $1 $2 -> [4, 0, 1, 2]
         vm.program = vec![1, 0, 0, 100, 1, 1, 0, 10, 4, 0, 1, 2];
         vm.run();
         assert_eq!(vm.registers[0], 100);
         assert_eq!(vm.registers[1], 10);
         assert_eq!(vm.registers[2], 90);
+    }
+
+    #[test]
+    fn test_div() {
+        let mut vm = VM::new();
+        // LOAD $0 21 -> [1, 0, 0, 21]
+        // LOAD $1 10 -> [1, 1, 0, 10]
+        // DIV $0 $1 $2 -> [5, 0, 1, 2]
+        vm.program = vec![1, 0, 0, 21, 1, 1, 0, 10, 5, 0, 1, 2];
+        vm.run();
+        assert_eq!(vm.registers[0], 21);
+        assert_eq!(vm.registers[1], 10);
+        assert_eq!(vm.registers[2], 2);
+        assert_eq!(vm.remainder, 1);
     }
 
     #[test]

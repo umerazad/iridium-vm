@@ -22,6 +22,11 @@ pub enum Opcode {
     // Subtraction operation. It operates on registers.
     //      SUB $0 $1 $2 where $2 = $0 - $1
     SUB,
+
+    // Division operation. It operates on registers.
+    //      DIV $0 $1 $2 where $2 = $0 / $1
+    //      and remainder is stored at the VM level in the remainder special register.
+    DIV,
 }
 
 /// Instruction struct represents an instruction for the VM. We support the following
@@ -52,6 +57,7 @@ impl From<u8> for Opcode {
             2 => Opcode::ADD,
             3 => Opcode::MUL,
             4 => Opcode::SUB,
+            5 => Opcode::DIV,
             _ => Opcode::IGL,
         }
     }
@@ -74,5 +80,6 @@ mod tests {
         assert_eq!(Opcode::ADD, Opcode::from(2));
         assert_eq!(Opcode::MUL, Opcode::from(3));
         assert_eq!(Opcode::SUB, Opcode::from(4));
+        assert_eq!(Opcode::DIV, Opcode::from(5));
     }
 }
