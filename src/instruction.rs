@@ -36,6 +36,24 @@ pub enum Opcode {
 
     // Relative jump backward.
     JMPB,
+
+    // Equal: EQ $0 $1 .. result is stored in the VM's equal_flag.
+    EQ,
+
+    // Not Equal: NEQ $0 $1 .. result is stored in the VM's equal_flag.
+    NEQ,
+
+    // Greater Than: GT $0 $1 .. result is stored in the VM's equal_flag.
+    GT,
+
+    // Greater Than OR Equal To: GTE $0 $1 .. result is stored in the VM's equal_flag.
+    GTE,
+
+    // Less Than: LT $0 $1 .. result is stored in the VM's equal_flag.
+    LT,
+
+    // Less Than OR Equal To: LTE $0 $1 .. result is stored in the VM's equal_flag.
+    LTE,
 }
 
 /// Instruction struct represents an instruction for the VM. We support the following
@@ -70,7 +88,13 @@ impl From<u8> for Opcode {
             6 => Opcode::JMP,
             7 => Opcode::JMPF,
             8 => Opcode::JMPB,
-            _ => Opcode::IGL,
+            9 => Opcode::EQ,
+            10 => Opcode::NEQ,
+            11 => Opcode::GT,
+            12 => Opcode::GTE,
+            13 => Opcode::LT,
+            14 => Opcode::LTE,
+            255 | _ => Opcode::IGL,
         }
     }
 }
@@ -87,14 +111,32 @@ mod tests {
 
     #[test]
     fn test_opcode_from_u8() {
+        // Halt
         assert_eq!(Opcode::HLT, Opcode::from(0));
+
+        // Illegal opcode
+        assert_eq!(Opcode::IGL, Opcode::from(255));
+
+        // Load/store
         assert_eq!(Opcode::LOAD, Opcode::from(1));
+
+        // Arithmatic ops.
         assert_eq!(Opcode::ADD, Opcode::from(2));
         assert_eq!(Opcode::MUL, Opcode::from(3));
         assert_eq!(Opcode::SUB, Opcode::from(4));
         assert_eq!(Opcode::DIV, Opcode::from(5));
+
+        // Jumps
         assert_eq!(Opcode::JMP, Opcode::from(6));
         assert_eq!(Opcode::JMPF, Opcode::from(7));
         assert_eq!(Opcode::JMPB, Opcode::from(8));
+
+        // Equality related ops.
+        assert_eq!(Opcode::EQ, Opcode::from(9));
+        assert_eq!(Opcode::NEQ, Opcode::from(10));
+        assert_eq!(Opcode::GT, Opcode::from(11));
+        assert_eq!(Opcode::GTE, Opcode::from(12));
+        assert_eq!(Opcode::LT, Opcode::from(13));
+        assert_eq!(Opcode::LTE, Opcode::from(14));
     }
 }
