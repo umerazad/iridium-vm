@@ -58,6 +58,10 @@ pub enum Opcode {
     // Jump If Equal: JEQ $0. It performs an absolute jump to the value of the register
     // if equal_flag is true.
     JEQ,
+
+    // Jump If Not Equal: JENQ $0. It performs an absolute jump to the value of the register
+    // if equal_flag is false.
+    JNEQ,
 }
 
 /// Instruction struct represents an instruction for the VM. We support the following
@@ -99,6 +103,7 @@ impl From<Opcode> for u8 {
             Opcode::LT => 13,
             Opcode::LTE => 14,
             Opcode::JEQ => 15,
+            Opcode::JNEQ => 16,
             Opcode::IGL => 255,
         }
     }
@@ -123,6 +128,7 @@ impl From<u8> for Opcode {
             13 => Opcode::LT,
             14 => Opcode::LTE,
             15 => Opcode::JEQ,
+            16 => Opcode::JNEQ,
             255 | _ => Opcode::IGL,
         }
     }
@@ -168,5 +174,6 @@ mod tests {
         assert_eq!(Opcode::LT, Opcode::from(13));
         assert_eq!(Opcode::LTE, Opcode::from(14));
         assert_eq!(Opcode::JEQ, Opcode::from(15));
+        assert_eq!(Opcode::JNEQ, Opcode::from(16));
     }
 }
