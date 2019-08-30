@@ -37,23 +37,27 @@ pub enum Opcode {
     // Relative jump backward.
     JMPB,
 
-    // Equal: EQ $0 $1 .. result is stored in the VM's equal_flag.
+    // Equal: EQ $0 $1. Result is stored in the VM's equal_flag.
     EQ,
 
-    // Not Equal: NEQ $0 $1 .. result is stored in the VM's equal_flag.
+    // Not Equal: NEQ $0 $1. Result is stored in the VM's equal_flag.
     NEQ,
 
-    // Greater Than: GT $0 $1 .. result is stored in the VM's equal_flag.
+    // Greater Than: GT $0 $1. Result is stored in the VM's equal_flag.
     GT,
 
-    // Greater Than OR Equal To: GTE $0 $1 .. result is stored in the VM's equal_flag.
+    // Greater Than OR Equal To: GTE $0 $1. Result is stored in the VM's equal_flag.
     GTE,
 
-    // Less Than: LT $0 $1 .. result is stored in the VM's equal_flag.
+    // Less Than: LT $0 $1. Result is stored in the VM's equal_flag.
     LT,
 
-    // Less Than OR Equal To: LTE $0 $1 .. result is stored in the VM's equal_flag.
+    // Less Than OR Equal To: LTE $0 $1. Result is stored in the VM's equal_flag.
     LTE,
+
+    // Jump If Equal: JEQ $0. It performs an absolute jump to the value of the register
+    // if equal_flag is true.
+    JEQ,
 }
 
 /// Instruction struct represents an instruction for the VM. We support the following
@@ -94,6 +98,7 @@ impl From<Opcode> for u8 {
             Opcode::GTE => 12,
             Opcode::LT => 13,
             Opcode::LTE => 14,
+            Opcode::JEQ => 15,
             Opcode::IGL => 255,
         }
     }
@@ -117,6 +122,7 @@ impl From<u8> for Opcode {
             12 => Opcode::GTE,
             13 => Opcode::LT,
             14 => Opcode::LTE,
+            15 => Opcode::JEQ,
             255 | _ => Opcode::IGL,
         }
     }
@@ -161,5 +167,6 @@ mod tests {
         assert_eq!(Opcode::GTE, Opcode::from(12));
         assert_eq!(Opcode::LT, Opcode::from(13));
         assert_eq!(Opcode::LTE, Opcode::from(14));
+        assert_eq!(Opcode::JEQ, Opcode::from(15));
     }
 }

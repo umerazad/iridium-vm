@@ -183,6 +183,12 @@ impl VM {
                 // Skip over next byte to align the PC with 4 byte.
                 self.next_8_bits();
             }
+            Opcode::JEQ => {
+                let target = self.registers[self.next_8_bits() as usize];
+                if self.equal_flag {
+                    self.pc = target as usize;
+                }
+            }
             _ => {
                 println!("Unrecognized opcode. Terminating");
                 is_done = true;
@@ -441,5 +447,15 @@ mod tests {
         vm.registers[1] = 199;
         vm.run_once();
         assert_eq!(true, vm.equal_flag);
+    }
+
+    #[test]
+    fn test_jeq() {
+        let mut vm = VM::new();
+        vm.registers[0] = 5;
+        vm.equal_flag = true;
+        vm.program = vec![15, 0, 0, 0, 1, 2, 3, 4];
+        vm.run_once();
+        assert_eq!(5, vm.pc);
     }
 }
