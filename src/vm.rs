@@ -1,7 +1,9 @@
 use crate::instruction::Opcode;
 
+/// Max number of logical registers in the VM.
 const MAX_REGISTERS: usize = 32;
 
+/// Main structure that holds all the state of the Iridium VM.
 #[derive(Default, Debug)]
 pub struct VM {
     // Logical registers.
@@ -43,6 +45,16 @@ impl VM {
     /// Execute one instruction.
     pub fn run_once(&mut self) {
         self.execute_instruction();
+    }
+
+    /// Append a bytecode to VM's program.
+    pub fn add_byte(&mut self, v: u8) {
+        self.program.push(v);
+    }
+
+    /// Append raw bytecode to VM's program.
+    pub fn add_bytes(&mut self, v: &[u8]) {
+        self.program.extend_from_slice(v);
     }
 
     // Executes the next instruction.
@@ -222,6 +234,43 @@ impl VM {
         opcode
     }
 }
+
+// This is a helper structure use to iterate over the VM's registers. Its
+// mainly used in the REPL.
+pub struct Registers {
+    registers: [i32; MAX_REGISTERS],
+    i: usize,
+}
+
+impl Registers {
+    fn new(vm: &VM) -> Self {
+        Registers {
+            registers: vm.registers,
+            i: 0,
+        }
+    }
+}
+
+impl Iterator for Registers {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<i32> {
+        if self.i < MAX_REGISTERS {
+            let result = self.registers[self.i];
+            self.i += 1;
+            return Some(result);
+        }
+        None
+    }
+}
+
+impl VM {
+    pub fn registers(&self) -> Registers {
+        Registers::new(self)
+    }
+}
+
+//------ End of Registers iterator region.
 
 #[cfg(test)]
 mod tests {
@@ -473,5 +522,31 @@ mod tests {
         vm.program = vec![16, 0, 0, 0, 1, 2, 3, 4];
         vm.run_once();
         assert_eq!(5, vm.pc);
+    }
+
+    #[test]
+    fn test_registers_iterator() {
+        let mut vm = VM::new();
+        for i in 0..MAX_REGISTERS {
+            vm.registers[i] = i as i32;
+        }
+
+        for (i, r) in vm.registers().enumerate() {
+            assert_eq!(i as i32, r);
+        }
+    }
+
+    #[test]
+    fn test_add_byte() {
+        let mut vm = VM::new();
+        vm.add_byte(1);
+        assert_eq!(vm.program[0], 1);
+    }
+
+    #[test]
+    fn test_add_bytes() {
+        let mut vm = VM::new();
+        vm.add_bytes(&[1, 2]);
+        assert_eq!(vm.program, &[1, 2]);
     }
 }

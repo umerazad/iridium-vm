@@ -1,9 +1,13 @@
 [package]
 name = "iridium"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Muhammad Umer Azad <umer@fastmail.com>"]
+description = "Implementation of Iridium VM based on the work of fletcher@subnetzero.io. The purpose of this exercise is to learn Rust."
 edition = "2018"
+license = "MIT"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+[[bin]]
+name = "iridium"
