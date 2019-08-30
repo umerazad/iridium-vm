@@ -76,6 +76,29 @@ impl Instruction {
     }
 }
 
+impl From<Opcode> for u8 {
+    fn from(opcode: Opcode) -> Self {
+        match opcode {
+            Opcode::HLT => 0,
+            Opcode::LOAD => 1,
+            Opcode::ADD => 2,
+            Opcode::MUL => 3,
+            Opcode::SUB => 4,
+            Opcode::DIV => 5,
+            Opcode::JMP => 6,
+            Opcode::JMPF => 7,
+            Opcode::JMPB => 8,
+            Opcode::EQ => 9,
+            Opcode::NEQ => 10,
+            Opcode::GT => 11,
+            Opcode::GTE => 12,
+            Opcode::LT => 13,
+            Opcode::LTE => 14,
+            Opcode::IGL => 255,
+        }
+    }
+}
+
 impl From<u8> for Opcode {
     fn from(v: u8) -> Self {
         match v {
