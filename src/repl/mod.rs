@@ -1,14 +1,19 @@
 use crate::vm::VM;
 use std;
-use std::io::{self, Write};
 use std::num::ParseIntError;
 use std::process;
 
+use rustyline::error::ReadlineError;
+use rustyline::{CompletionType, Config, Editor};
+
+#[cfg(unix)]
+static PROMPT: &'static str = "\x1b[1;32miridium >>\x1b[0m ";
+
+#[cfg(windows)]
+static PROMPT: &'static str = "iridium >> ";
+
 /// Key structure for the Assembly REPL.
 pub struct REPL {
-    // Buffer to hold assembly commands.
-    command_buffer: Vec<String>,
-
     // VM instance that executes the assembly.
     vm: VM,
 }
@@ -16,62 +21,80 @@ pub struct REPL {
 impl REPL {
     /// Create a new REPL instance.
     pub fn new() -> Self {
-        REPL {
-            command_buffer: vec![],
-            vm: VM::new(),
-        }
+        REPL { vm: VM::new() }
     }
 
     /// Execute REPL loop.
     pub fn run(&mut self) {
-        println!("Welcome to Iridium VM! Type away!");
+        let config = Config::builder()
+            .history_ignore_space(true)
+            .completion_type(CompletionType::List)
+            .build();
+
+        let mut rl = Editor::<()>::with_config(config);
+
+        if rl.load_history("history.txt").is_ok() {
+            println!("Loaded history.");
+        }
+
+        println!();
+        println!("Welcome to Iridium VM!");
+        println!("Press Ctrl-D or enter \"q\" to exit.");
+        println!();
+
         loop {
-            print!(">>> ");
-            // stdout is line-buffered by default that's why we need to explicitly flush it to
-            // ensure that the prompt actually prints.
-            io::stdout().flush().expect("Unable to flush output.");
+            let readline = rl.readline(PROMPT);
 
-            let mut buffer = String::new();
-
-            // TODO: Cleanup expect once basic testing is done.
-            io::stdin()
-                .read_line(&mut buffer)
-                .expect("Unable to read line");
-
-            let buffer = buffer.trim();
-            self.command_buffer.push(buffer.to_string());
-
-            match buffer {
-                "q" | "quit" => {
-                    println!("Goodbye!");
-                    process::exit(0);
-                }
-                "hs" | "history" => {
-                    for cmd in &self.command_buffer {
-                        println!("{}", cmd);
-                    }
-                }
-                "r" | "registers" => {
-                    self.dump_registers();
-                }
-                _ => {
-                    // Let's try and interpret the input as hex values and see if it
-                    // makes sense.
-                    match self.parse_hex(buffer) {
-                        Ok(bytes) => {
-                            for byte in bytes {
-                                self.vm.add_byte(byte);
+            match readline {
+                Ok(line) => {
+                    // Update history.
+                    rl.add_history_entry(line.as_str());
+                    match line.as_str() {
+                        "q" | "quit" => {
+                            println!("Goodbye!");
+                            process::exit(0);
+                        }
+                        "hs" | "history" => {
+                            for cmd in rl.history().iter() {
+                                println!("{}", cmd);
                             }
                         }
-                        Err(_) => {
-                            println!("Invalid input. For raw bytecode please enter 4 groups of 2 hex chars.");
-                            continue;
+                        "r" | "registers" => {
+                            self.dump_registers();
+                        }
+                        _ => {
+                            // Let's try and interpret the input as hex values and see if it
+                            // makes sense.
+                            match self.parse_hex(line.as_str()) {
+                                Ok(bytes) => {
+                                    for byte in bytes {
+                                        self.vm.add_byte(byte);
+                                    }
+                                }
+                                Err(_) => {
+                                    println!("Invalid input. For raw bytecode please enter 4 groups of 2 hex chars.");
+                                    continue;
+                                }
+                            }
+
+                            // We land here if the hex parsing was successful. Let's try and execute the
+                            // newly added byte-code.
+                            self.vm.run_once();
                         }
                     }
+                }
 
-                    // We land here if the hex parsing was successful. Let's try and execute the
-                    // newly added byte-code.
-                    self.vm.run_once();
+                Err(ReadlineError::Interrupted) => {
+                    println!("Ctrl-C");
+                    break;
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("Ctrl-D");
+                    break;
+                }
+                Err(err) => {
+                    println!("Error: {:?}", err);
+                    break;
                 }
             }
         }
