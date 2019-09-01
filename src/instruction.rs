@@ -134,6 +134,31 @@ impl From<u8> for Opcode {
     }
 }
 
+impl From<&str> for Opcode {
+    fn from(v: &str) -> Self {
+        match v.to_uppercase().as_str() {
+            "HLT" => Opcode::HLT,
+            "LOAD" => Opcode::LOAD,
+            "ADD" => Opcode::ADD,
+            "MUL" => Opcode::MUL,
+            "SUB" => Opcode::SUB,
+            "DIV" => Opcode::DIV,
+            "JMP" => Opcode::JMP,
+            "JMPF" => Opcode::JMPF,
+            "JMPB" => Opcode::JMPB,
+            "EQ" => Opcode::EQ,
+            "NEQ" => Opcode::NEQ,
+            "GT" => Opcode::GT,
+            "GTE" => Opcode::GTE,
+            "LT" => Opcode::LT,
+            "LTE" => Opcode::LTE,
+            "JEQ" => Opcode::JEQ,
+            "JNEQ" => Opcode::JNEQ,
+            _ => Opcode::IGL,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -175,5 +200,27 @@ mod tests {
         assert_eq!(Opcode::LTE, Opcode::from(14));
         assert_eq!(Opcode::JEQ, Opcode::from(15));
         assert_eq!(Opcode::JNEQ, Opcode::from(16));
+    }
+
+    #[test]
+    fn test_opcode_from_str() {
+        assert_eq!(Opcode::HLT, Opcode::from("hlt"));
+        assert_eq!(Opcode::IGL, Opcode::from("hehehe"));
+        assert_eq!(Opcode::LOAD, Opcode::from("load"));
+        assert_eq!(Opcode::ADD, Opcode::from("add"));
+        assert_eq!(Opcode::MUL, Opcode::from("mul"));
+        assert_eq!(Opcode::SUB, Opcode::from("sub"));
+        assert_eq!(Opcode::DIV, Opcode::from("div"));
+        assert_eq!(Opcode::JMP, Opcode::from("jmp"));
+        assert_eq!(Opcode::JMPF, Opcode::from("jmpf"));
+        assert_eq!(Opcode::JMPB, Opcode::from("jmpb"));
+        assert_eq!(Opcode::EQ, Opcode::from("eq"));
+        assert_eq!(Opcode::NEQ, Opcode::from("neq"));
+        assert_eq!(Opcode::GT, Opcode::from("gt"));
+        assert_eq!(Opcode::GTE, Opcode::from("gte"));
+        assert_eq!(Opcode::LT, Opcode::from("lt"));
+        assert_eq!(Opcode::LTE, Opcode::from("lte"));
+        assert_eq!(Opcode::JEQ, Opcode::from("jeq"));
+        assert_eq!(Opcode::JNEQ, Opcode::from("jneq"));
     }
 }
