@@ -2,6 +2,12 @@ pub mod parsers;
 
 use crate::instruction::Opcode;
 
+// Make sure that all instructions are 4 bytes even. We are
+// intentially using 0xFF instead of 0 as '0' could be a valid
+// value for a register # i.e. div $1 $2 will end up encoded as
+// div $1 $2 $0.
+const PADDING: u8 = 0xFF;
+
 /// Token represents different parts of instructions.
 #[derive(Debug, PartialEq)]
 pub enum Token {
@@ -54,9 +60,9 @@ impl AssemblyInstruction {
             }
         }
 
-        // Make sure that all instructions are 4 bytes even.
+        // Pad the instructions to make them 4-bytes.
         while result.len() < 4 {
-            result.push(0);
+            result.push(PADDING);
         }
 
         result
@@ -118,7 +124,7 @@ mod tests {
             operand2: Some(Token::Register(20)),
             operand3: None,
         };
-        assert_eq!(eq.to_bytes(), vec![Opcode::EQ as u8, 10, 20, 0]);
+        assert_eq!(eq.to_bytes(), vec![Opcode::EQ as u8, 10, 20, PADDING]);
     }
 
     #[test]
