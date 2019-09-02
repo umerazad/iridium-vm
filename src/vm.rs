@@ -34,6 +34,16 @@ impl VM {
         }
     }
 
+    /// Dump VM state on terminal.
+    pub fn dump_state(&self) {
+        // Not dumping the registers are they are exposed through
+        // the registers() iterator and can be examined as needed.
+        println!("VM state snapshot:\n------------------");
+        println!("\tPC: {}", self.pc);
+        println!("\tEqual Flag: {}", self.equal_flag);
+        println!("\tRemainder: {}", self.remainder);
+    }
+
     /// Execute the VM instance to completion.
     pub fn run(&mut self) {
         let mut is_done = false;

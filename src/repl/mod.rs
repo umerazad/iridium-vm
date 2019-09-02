@@ -62,6 +62,9 @@ impl REPL {
                         "r" | "registers" => {
                             self.dump_registers();
                         }
+                        "vm" => {
+                            self.vm.dump_state();
+                        }
                         _ => {
                             let parsed_program = parse_program(line.as_str());
                             if parsed_program.is_err() {
