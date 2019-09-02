@@ -1,67 +1,67 @@
 /// Opcode enum represents the opcodes for all the instructions supported by the VM.
 /// Each opcode is represented by a u8 in the instruction format.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(FromPrimitive, Copy, Clone, Debug, PartialEq)]
 pub enum Opcode {
     // Halt instruction.
-    HLT,
+    HLT = 0,
 
     // Load a value into register.
-    LOAD,
+    LOAD = 1,
 
     // Add operation. It operates on registers.
     //      ADD $0 $1 $2 where $2 = $0 + $1
-    ADD,
+    ADD = 2,
 
     // Multiply. It operates on registers.
     //      MUL $0 $1 $2 where $2 = $0 * $1
-    MUL,
+    MUL = 3,
 
     // Subtraction operation. It operates on registers.
     //      SUB $0 $1 $2 where $2 = $0 - $1
-    SUB,
+    SUB = 4,
 
     // Division operation. It operates on registers.
     //      DIV $0 $1 $2 where $2 = $0 / $1
     //      and remainder is stored at the VM level in the remainder special register.
-    DIV,
+    DIV = 5,
 
     // Absolute Jump. It reads the offset from the operand register.
-    JMP,
+    JMP = 6,
 
     // Relative jump forward.
-    JMPF,
+    JMPF = 7,
 
     // Relative jump backward.
-    JMPB,
+    JMPB = 8,
 
     // Equal: EQ $0 $1. Result is stored in the VM's equal_flag.
-    EQ,
+    EQ = 9,
 
     // Not Equal: NEQ $0 $1. Result is stored in the VM's equal_flag.
-    NEQ,
+    NEQ = 10,
 
     // Greater Than: GT $0 $1. Result is stored in the VM's equal_flag.
-    GT,
+    GT = 11,
 
     // Greater Than OR Equal To: GTE $0 $1. Result is stored in the VM's equal_flag.
-    GTE,
+    GTE = 12,
 
     // Less Than: LT $0 $1. Result is stored in the VM's equal_flag.
-    LT,
+    LT = 13,
 
     // Less Than OR Equal To: LTE $0 $1. Result is stored in the VM's equal_flag.
-    LTE,
+    LTE = 14,
 
     // Jump If Equal: JEQ $0. It performs an absolute jump to the value of the register
     // if equal_flag is true.
-    JEQ,
+    JEQ = 15,
 
     // Jump If Not Equal: JENQ $0. It performs an absolute jump to the value of the register
     // if equal_flag is false.
-    JNEQ,
+    JNEQ = 16,
 
     // Illegal instruction.
-    IGL,
+    IGL = 255,
 }
 
 /// Instruction struct represents an instruction for the VM. We support the following
@@ -86,50 +86,15 @@ impl Instruction {
 
 impl From<Opcode> for u8 {
     fn from(opcode: Opcode) -> Self {
-        match opcode {
-            Opcode::HLT => 0,
-            Opcode::LOAD => 1,
-            Opcode::ADD => 2,
-            Opcode::MUL => 3,
-            Opcode::SUB => 4,
-            Opcode::DIV => 5,
-            Opcode::JMP => 6,
-            Opcode::JMPF => 7,
-            Opcode::JMPB => 8,
-            Opcode::EQ => 9,
-            Opcode::NEQ => 10,
-            Opcode::GT => 11,
-            Opcode::GTE => 12,
-            Opcode::LT => 13,
-            Opcode::LTE => 14,
-            Opcode::JEQ => 15,
-            Opcode::JNEQ => 16,
-            Opcode::IGL => 255,
-        }
+        opcode as u8
     }
 }
 
 impl From<u8> for Opcode {
     fn from(v: u8) -> Self {
-        match v {
-            0 => Opcode::HLT,
-            1 => Opcode::LOAD,
-            2 => Opcode::ADD,
-            3 => Opcode::MUL,
-            4 => Opcode::SUB,
-            5 => Opcode::DIV,
-            6 => Opcode::JMP,
-            7 => Opcode::JMPF,
-            8 => Opcode::JMPB,
-            9 => Opcode::EQ,
-            10 => Opcode::NEQ,
-            11 => Opcode::GT,
-            12 => Opcode::GTE,
-            13 => Opcode::LT,
-            14 => Opcode::LTE,
-            15 => Opcode::JEQ,
-            16 => Opcode::JNEQ,
-            255 | _ => Opcode::IGL,
+        match num::FromPrimitive::from_u8(v) {
+            Some(x) => x,
+            None => Opcode::IGL,
         }
     }
 }
@@ -221,7 +186,7 @@ mod tests {
         assert_eq!(Opcode::LTE as u8, 14);
         assert_eq!(Opcode::JEQ as u8, 15);
         assert_eq!(Opcode::JNEQ as u8, 16);
-        assert_eq!(Opcode::IGL as u8, 17);
+        assert_eq!(Opcode::IGL as u8, 255);
     }
 
     #[test]
