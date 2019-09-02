@@ -60,6 +60,9 @@ pub enum Opcode {
     // if equal_flag is false.
     JNEQ = 16,
 
+    // Extend heap size: ALLOC $0
+    ALOC = 17,
+
     // Illegal instruction.
     IGL = 255,
 }
@@ -119,6 +122,7 @@ impl From<&str> for Opcode {
             "LTE" => Opcode::LTE,
             "JEQ" => Opcode::JEQ,
             "JNEQ" => Opcode::JNEQ,
+            "ALOC" => Opcode::ALOC,
             _ => Opcode::IGL,
         }
     }
@@ -165,6 +169,7 @@ mod tests {
         assert_eq!(Opcode::LTE, Opcode::from(14));
         assert_eq!(Opcode::JEQ, Opcode::from(15));
         assert_eq!(Opcode::JNEQ, Opcode::from(16));
+        assert_eq!(Opcode::ALOC, Opcode::from(17));
     }
 
     #[test]
@@ -186,6 +191,7 @@ mod tests {
         assert_eq!(Opcode::LTE as u8, 14);
         assert_eq!(Opcode::JEQ as u8, 15);
         assert_eq!(Opcode::JNEQ as u8, 16);
+        assert_eq!(Opcode::ALOC as u8, 17);
         assert_eq!(Opcode::IGL as u8, 255);
     }
 
@@ -209,5 +215,6 @@ mod tests {
         assert_eq!(Opcode::LTE, Opcode::from("lte"));
         assert_eq!(Opcode::JEQ, Opcode::from("jeq"));
         assert_eq!(Opcode::JNEQ, Opcode::from("jneq"));
+        assert_eq!(Opcode::ALOC, Opcode::from("aloc"));
     }
 }

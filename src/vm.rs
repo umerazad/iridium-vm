@@ -20,6 +20,9 @@ pub struct VM {
 
     // Tracks the result of the last comparison operation.
     equal_flag: bool,
+
+    // Heap for dynamic memory allocation.
+    heap: Vec<u8>,
 }
 
 impl VM {
@@ -31,6 +34,7 @@ impl VM {
             program: vec![],
             remainder: 0,
             equal_flag: false,
+            heap: vec![],
         }
     }
 
@@ -42,6 +46,7 @@ impl VM {
         println!("\tPC: {}", self.pc);
         println!("\tEqual Flag: {}", self.equal_flag);
         println!("\tRemainder: {}", self.remainder);
+        println!("\tHeap Length: {}", self.heap.len());
     }
 
     /// Execute the VM instance to completion.
@@ -88,36 +93,36 @@ impl VM {
                 self.registers[reg] = num as i32;
             }
             Opcode::ADD => {
-                let reg1 = self.registers[self.next_8_bits() as usize];
-                let reg2 = self.registers[self.next_8_bits() as usize];
+                let reg1 = self.read_register();
+                let reg2 = self.read_register();
                 self.registers[self.next_8_bits() as usize] = reg1 + reg2;
             }
             Opcode::SUB => {
-                let reg1 = self.registers[self.next_8_bits() as usize];
-                let reg2 = self.registers[self.next_8_bits() as usize];
+                let reg1 = self.read_register();
+                let reg2 = self.read_register();
                 self.registers[self.next_8_bits() as usize] = reg1 - reg2;
             }
             Opcode::MUL => {
-                let reg1 = self.registers[self.next_8_bits() as usize];
-                let reg2 = self.registers[self.next_8_bits() as usize];
+                let reg1 = self.read_register();
+                let reg2 = self.read_register();
                 self.registers[self.next_8_bits() as usize] = reg1 * reg2;
             }
             Opcode::DIV => {
-                let reg1 = self.registers[self.next_8_bits() as usize];
-                let reg2 = self.registers[self.next_8_bits() as usize];
+                let reg1 = self.read_register();
+                let reg2 = self.read_register();
                 self.registers[self.next_8_bits() as usize] = reg1 / reg2;
                 self.remainder = (reg1 % reg2) as u32;
             }
             Opcode::JMP => {
-                let target = self.registers[self.next_8_bits() as usize];
+                let target = self.read_register();
                 self.pc = target as usize;
             }
             Opcode::JMPF => {
-                let target = self.registers[self.next_8_bits() as usize];
+                let target = self.read_register();
                 self.pc += target as usize;
             }
             Opcode::JMPB => {
-                let target = self.registers[self.next_8_bits() as usize];
+                let target = self.read_register();
                 self.pc -= target as usize;
             }
 
@@ -128,8 +133,8 @@ impl VM {
             // length evenly 4.
             //
             Opcode::EQ => {
-                let r1 = self.registers[self.next_8_bits() as usize];
-                let r2 = self.registers[self.next_8_bits() as usize];
+                let r1 = self.read_register();
+                let r2 = self.read_register();
 
                 if r1 == r2 {
                     self.equal_flag = true;
@@ -141,8 +146,8 @@ impl VM {
                 self.next_8_bits();
             }
             Opcode::NEQ => {
-                let r1 = self.registers[self.next_8_bits() as usize];
-                let r2 = self.registers[self.next_8_bits() as usize];
+                let r1 = self.read_register();
+                let r2 = self.read_register();
 
                 if r1 != r2 {
                     self.equal_flag = true;
@@ -154,8 +159,8 @@ impl VM {
                 self.next_8_bits();
             }
             Opcode::GT => {
-                let r1 = self.registers[self.next_8_bits() as usize];
-                let r2 = self.registers[self.next_8_bits() as usize];
+                let r1 = self.read_register();
+                let r2 = self.read_register();
 
                 if r1 > r2 {
                     self.equal_flag = true;
@@ -167,8 +172,8 @@ impl VM {
                 self.next_8_bits();
             }
             Opcode::GTE => {
-                let r1 = self.registers[self.next_8_bits() as usize];
-                let r2 = self.registers[self.next_8_bits() as usize];
+                let r1 = self.read_register();
+                let r2 = self.read_register();
 
                 if r1 >= r2 {
                     self.equal_flag = true;
@@ -180,8 +185,8 @@ impl VM {
                 self.next_8_bits();
             }
             Opcode::LT => {
-                let r1 = self.registers[self.next_8_bits() as usize];
-                let r2 = self.registers[self.next_8_bits() as usize];
+                let r1 = self.read_register();
+                let r2 = self.read_register();
 
                 if r1 < r2 {
                     self.equal_flag = true;
@@ -193,8 +198,8 @@ impl VM {
                 self.next_8_bits();
             }
             Opcode::LTE => {
-                let r1 = self.registers[self.next_8_bits() as usize];
-                let r2 = self.registers[self.next_8_bits() as usize];
+                let r1 = self.read_register();
+                let r2 = self.read_register();
 
                 if r1 <= r2 {
                     self.equal_flag = true;
@@ -206,16 +211,20 @@ impl VM {
                 self.next_8_bits();
             }
             Opcode::JEQ => {
-                let target = self.registers[self.next_8_bits() as usize];
+                let target = self.read_register();
                 if self.equal_flag {
                     self.pc = target as usize;
                 }
             }
             Opcode::JNEQ => {
-                let target = self.registers[self.next_8_bits() as usize];
+                let target = self.read_register();
                 if !self.equal_flag {
                     self.pc = target as usize;
                 }
+            }
+            Opcode::ALOC => {
+                let new_size = self.heap.len() + self.read_register() as usize;
+                self.heap.resize(new_size, 0);
             }
             _ => {
                 println!("Unrecognized opcode. Terminating");
@@ -223,6 +232,10 @@ impl VM {
             }
         }
         is_done
+    }
+
+    fn read_register(&mut self) -> i32 {
+        self.registers[self.next_8_bits() as usize]
     }
 
     fn next_8_bits(&mut self) -> u8 {
@@ -294,7 +307,7 @@ mod tests {
     #[test]
     fn test_hlt() {
         let mut vm = VM::new();
-        vm.program = vec![0, 0];
+        vm.program = vec![Opcode::HLT as u8, 0];
         vm.run();
         assert_eq!(vm.pc, 1);
     }
@@ -303,7 +316,7 @@ mod tests {
     fn test_load() {
         let mut vm = VM::new();
         // LOAD #0 500
-        vm.program = vec![1, 0, 1, 244];
+        vm.program = vec![Opcode::LOAD as u8, 0, 1, 244];
         vm.run();
         assert_eq!(vm.registers[0], 500);
     }
@@ -314,7 +327,9 @@ mod tests {
         // LOAD $0 10 -> [1, 0, 0, 10]
         // LOAD $1 10 -> [1, 1, 0, 10]
         // ADD $0 $1 $2 -> [2, 0, 1, 2]
-        vm.program = vec![1, 0, 0, 10, 1, 1, 0, 10, 2, 0, 1, 2];
+        let load = Opcode::LOAD as u8;
+        let add = Opcode::ADD as u8;
+        vm.program = vec![load, 0, 0, 10, load, 1, 0, 10, add, 0, 1, 2];
         vm.run();
         assert_eq!(vm.registers[0], 10);
         assert_eq!(vm.registers[1], 10);
@@ -327,7 +342,9 @@ mod tests {
         // LOAD $0 10 -> [1, 0, 0, 10]
         // LOAD $1 10 -> [1, 1, 0, 10]
         // MUL $0 $1 $2 -> [3, 0, 1, 2]
-        vm.program = vec![1, 0, 0, 10, 1, 1, 0, 10, 3, 0, 1, 2];
+        let load = Opcode::LOAD as u8;
+        let mul = Opcode::MUL as u8;
+        vm.program = vec![load, 0, 0, 10, load, 1, 0, 10, mul, 0, 1, 2];
         vm.run();
         assert_eq!(vm.registers[0], 10);
         assert_eq!(vm.registers[1], 10);
@@ -340,7 +357,9 @@ mod tests {
         // LOAD $0 100 -> [1, 0, 0, 100]
         // LOAD $1 10 -> [1, 1, 0, 10]
         // SUB $0 $1 $2 -> [4, 0, 1, 2]
-        vm.program = vec![1, 0, 0, 100, 1, 1, 0, 10, 4, 0, 1, 2];
+        let load = Opcode::LOAD as u8;
+        let sub = Opcode::SUB as u8;
+        vm.program = vec![load, 0, 0, 100, load, 1, 0, 10, sub, 0, 1, 2];
         vm.run();
         assert_eq!(vm.registers[0], 100);
         assert_eq!(vm.registers[1], 10);
@@ -353,7 +372,9 @@ mod tests {
         // LOAD $0 21 -> [1, 0, 0, 21]
         // LOAD $1 10 -> [1, 1, 0, 10]
         // DIV $0 $1 $2 -> [5, 0, 1, 2]
-        vm.program = vec![1, 0, 0, 21, 1, 1, 0, 10, 5, 0, 1, 2];
+        let load = Opcode::LOAD as u8;
+        let div = Opcode::DIV as u8;
+        vm.program = vec![load, 0, 0, 21, load, 1, 0, 10, div, 0, 1, 2];
         vm.run();
         assert_eq!(vm.registers[0], 21);
         assert_eq!(vm.registers[1], 10);
@@ -365,7 +386,7 @@ mod tests {
     fn test_jmp() {
         let mut vm = VM::new();
         vm.registers[0] = 1;
-        vm.program = vec![6, 0, 0, 0];
+        vm.program = vec![Opcode::JMP as u8, 0, 0, 0];
         vm.run_once();
         assert_eq!(vm.pc, 1);
     }
@@ -377,7 +398,9 @@ mod tests {
         // JMPF $0
         // 0, 0
         // JMP $0
-        vm.program = vec![7, 0, 0, 0, 6, 0, 0, 0];
+        let jmpf = Opcode::JMPF as u8;
+        let jmp = Opcode::JMP as u8;
+        vm.program = vec![jmpf, 0, 0, 0, jmp, 0, 0, 0];
         vm.run_once();
         assert_eq!(vm.pc, 4);
     }
@@ -387,13 +410,15 @@ mod tests {
         let mut vm = VM::new();
         vm.registers[0] = 4;
         vm.registers[1] = 2;
-        // JMPB $0
+        // JMP $0
         // 0, 0
         // JMPB $0
         //
         //  This is practically a loop {} given that JMPB is 2 bytes and we are asking it to go
         //  back 2-bytes.
-        vm.program = vec![6, 0, 0, 0, 8, 1, 0, 0];
+        let jmp = Opcode::JMP as u8;
+        let jmpb = Opcode::JMPB as u8;
+        vm.program = vec![jmp, 0, 0, 0, jmpb, 1, 0, 0];
         vm.run_once();
         assert_eq!(vm.pc, 4);
     }
@@ -413,7 +438,8 @@ mod tests {
         vm.registers[1] = 99;
         // EQ $0 $1
         // EQ $0 $1
-        vm.program = vec![9, 0, 1, 0, 9, 0, 1, 0];
+        let eq = Opcode::EQ as u8;
+        vm.program = vec![eq, 0, 1, 0, eq, 0, 1, 0];
         assert_eq!(false, vm.equal_flag);
         vm.run_once();
         assert_eq!(true, vm.equal_flag);
@@ -430,7 +456,8 @@ mod tests {
         vm.registers[1] = 99;
         // NEQ $0 $1
         // NEQ $0 $1
-        vm.program = vec![10, 0, 1, 0, 10, 0, 1, 0];
+        let neq = Opcode::NEQ as u8;
+        vm.program = vec![neq, 0, 1, 0, neq, 0, 1, 0];
         vm.run_once();
         assert_eq!(false, vm.equal_flag);
 
@@ -446,7 +473,8 @@ mod tests {
         vm.registers[1] = 99;
         // GT $0 $1
         // GT $0 $1
-        vm.program = vec![11, 0, 1, 0, 11, 0, 1, 0];
+        let gt = Opcode::GT as u8;
+        vm.program = vec![gt, 0, 1, 0, gt, 0, 1, 0];
         vm.run_once();
         assert_eq!(true, vm.equal_flag);
 
@@ -463,7 +491,8 @@ mod tests {
         // GTE $0 $1
         // GTE $0 $1
         // GTE $0 $1
-        vm.program = vec![12, 0, 1, 0, 12, 0, 1, 0, 12, 0, 1, 0];
+        let gte = Opcode::GTE as u8;
+        vm.program = vec![gte, 0, 1, 0, gte, 0, 1, 0, gte, 0, 1, 0];
         vm.run_once();
         assert_eq!(true, vm.equal_flag);
 
@@ -483,7 +512,8 @@ mod tests {
         vm.registers[1] = 99;
         // LT $0 $1
         // LT $0 $1
-        vm.program = vec![13, 0, 1, 0, 13, 0, 1, 0];
+        let lt = Opcode::LT as u8;
+        vm.program = vec![lt, 0, 1, 0, lt, 0, 1, 0];
         vm.run_once();
         assert_eq!(true, vm.equal_flag);
 
@@ -500,7 +530,8 @@ mod tests {
         // LTE $0 $1
         // LTE $0 $1
         // LTE $0 $1
-        vm.program = vec![14, 0, 1, 0, 14, 0, 1, 0, 14, 0, 1, 0];
+        let lte = Opcode::LTE as u8;
+        vm.program = vec![lte, 0, 1, 0, lte, 0, 1, 0, lte, 0, 1, 0];
         vm.run_once();
         assert_eq!(false, vm.equal_flag);
 
@@ -518,7 +549,7 @@ mod tests {
         let mut vm = VM::new();
         vm.registers[0] = 5;
         vm.equal_flag = true;
-        vm.program = vec![15, 0, 0, 0, 1, 2, 3, 4];
+        vm.program = vec![Opcode::JEQ as u8, 0, 0, 0, 1, 2, 3, 4];
         vm.run_once();
         assert_eq!(5, vm.pc);
     }
@@ -528,9 +559,19 @@ mod tests {
         let mut vm = VM::new();
         vm.registers[0] = 5;
         vm.equal_flag = false;
-        vm.program = vec![16, 0, 0, 0, 1, 2, 3, 4];
+        vm.program = vec![Opcode::JNEQ as u8, 0, 0, 0, 1, 2, 3, 4];
         vm.run_once();
         assert_eq!(5, vm.pc);
+    }
+
+    #[test]
+    fn test_aloc() {
+        let mut vm = VM::new();
+        assert_eq!(0, vm.heap.len());
+        vm.registers[9] = 1024;
+        vm.program = vec![Opcode::ALOC as u8, 9, 0, 0];
+        vm.run_once();
+        assert_eq!(1024, vm.heap.len());
     }
 
     #[test]
