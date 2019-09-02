@@ -5,9 +5,6 @@ pub enum Opcode {
     // Halt instruction.
     HLT,
 
-    // Illegal instruction.
-    IGL,
-
     // Load a value into register.
     LOAD,
 
@@ -62,6 +59,9 @@ pub enum Opcode {
     // Jump If Not Equal: JENQ $0. It performs an absolute jump to the value of the register
     // if equal_flag is false.
     JNEQ,
+
+    // Illegal instruction.
+    IGL,
 }
 
 /// Instruction struct represents an instruction for the VM. We support the following
@@ -200,6 +200,28 @@ mod tests {
         assert_eq!(Opcode::LTE, Opcode::from(14));
         assert_eq!(Opcode::JEQ, Opcode::from(15));
         assert_eq!(Opcode::JNEQ, Opcode::from(16));
+    }
+
+    #[test]
+    fn test_opcode_as_u8() {
+        assert_eq!(Opcode::HLT as u8, 0);
+        assert_eq!(Opcode::LOAD as u8, 1);
+        assert_eq!(Opcode::ADD as u8, 2);
+        assert_eq!(Opcode::MUL as u8, 3);
+        assert_eq!(Opcode::SUB as u8, 4);
+        assert_eq!(Opcode::DIV as u8, 5);
+        assert_eq!(Opcode::JMP as u8, 6);
+        assert_eq!(Opcode::JMPF as u8, 7);
+        assert_eq!(Opcode::JMPB as u8, 8);
+        assert_eq!(Opcode::EQ as u8, 9);
+        assert_eq!(Opcode::NEQ as u8, 10);
+        assert_eq!(Opcode::GT as u8, 11);
+        assert_eq!(Opcode::GTE as u8, 12);
+        assert_eq!(Opcode::LT as u8, 13);
+        assert_eq!(Opcode::LTE as u8, 14);
+        assert_eq!(Opcode::JEQ as u8, 15);
+        assert_eq!(Opcode::JNEQ as u8, 16);
+        assert_eq!(Opcode::IGL as u8, 17);
     }
 
     #[test]

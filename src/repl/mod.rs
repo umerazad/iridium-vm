@@ -1,6 +1,6 @@
+use crate::assembler::parsers::parse_program;
 use crate::vm::VM;
 use std;
-use std::num::ParseIntError;
 use std::process;
 
 use rustyline::error::ReadlineError;
@@ -63,22 +63,19 @@ impl REPL {
                             self.dump_registers();
                         }
                         _ => {
-                            // Let's try and interpret the input as hex values and see if it
-                            // makes sense.
-                            match self.parse_hex(line.as_str()) {
-                                Ok(bytes) => {
-                                    for byte in bytes {
-                                        self.vm.add_byte(byte);
-                                    }
-                                }
-                                Err(_) => {
-                                    println!("Invalid input. For raw bytecode please enter 4 groups of 2 hex chars.");
-                                    continue;
-                                }
+                            let parsed_program = parse_program(line.as_str());
+                            if parsed_program.is_err() {
+                                println!(
+                                    "Unable to parse input. Error: {:?}",
+                                    parsed_program.err()
+                                );
+                                continue;
                             }
 
-                            // We land here if the hex parsing was successful. Let's try and execute the
-                            // newly added byte-code.
+                            let (_, result) = parsed_program.unwrap();
+                            let bytecode = result.to_bytes();
+                            self.vm.add_bytes(&bytecode);
+                            // Run stuff.
                             self.vm.run_once();
                         }
                     }
@@ -98,19 +95,6 @@ impl REPL {
                 }
             }
         }
-    }
-
-    fn parse_hex(&self, bytes: &str) -> Result<Vec<u8>, ParseIntError> {
-        let elements = bytes.split(" ").collect::<Vec<&str>>();
-        let mut result: Vec<u8> = vec![];
-
-        for s in elements {
-            match u8::from_str_radix(&s, 16) {
-                Ok(v) => result.push(v),
-                Err(e) => return Err(e),
-            }
-        }
-        Ok(result)
     }
 
     fn dump_registers(&self) {
