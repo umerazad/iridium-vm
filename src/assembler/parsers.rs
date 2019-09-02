@@ -1,3 +1,4 @@
+use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, digit1, multispace1};
 use nom::combinator::{cut, map};
@@ -76,9 +77,41 @@ fn parse_instruction1(input: &str) -> ParseResult<AssemblyInstruction> {
     }
 }
 
+/// Parses instructions of the form:
+///     Opcode $reg $reg $reg i.e. ADD $0 $1 $2
+fn parse_instruction2(input: &str) -> ParseResult<AssemblyInstruction> {
+    let parser = tuple((
+        parse_opcode,
+        preceded(multispace1, parse_register),
+        preceded(multispace1, parse_register),
+        preceded(multispace1, parse_register),
+    ));
+
+    match parser(input.trim()) {
+        Ok((next_input, (opcode, r1, r2, r3))) => Ok((
+            next_input,
+            AssemblyInstruction {
+                opcode: opcode,
+                operand1: Some(r1),
+                operand2: Some(r2),
+                operand3: Some(r3),
+            },
+        )),
+        Err(err) => Err(err),
+    }
+}
+
+/// This is the high level instruction parser combinator that parses
+/// all forms of instructions.
+pub fn parse_instruction(input: &str) -> ParseResult<AssemblyInstruction> {
+    // Its important that the opcode only instruction is parsed as the last resort
+    // given that its format matches all other types of instructions.
+    alt((parse_instruction1, parse_instruction2, parse_instruction0))(input)
+}
+
 /// Parses a complete program.
 pub fn parse_program(input: &str) -> ParseResult<Program> {
-    match many1(parse_instruction1)(input.trim()) {
+    match many1(parse_instruction)(input.trim()) {
         Ok((next_input, instructions)) => Ok((next_input, Program { instructions })),
         Err(e) => Err(e),
     }
@@ -174,8 +207,32 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_instruction2() {
+        let result = parse_instruction2("  add $0 $1 $3 \t\n  ");
+        assert_eq!(
+            result,
+            Ok((
+                "",
+                AssemblyInstruction {
+                    opcode: Token::Opcode(Opcode::ADD),
+                    operand1: Some(Token::Register(0)),
+                    operand2: Some(Token::Register(1)),
+                    operand3: Some(Token::Register(3)),
+                }
+            ))
+        )
+    }
+
+    #[test]
     fn test_parse_program() {
-        let result = parse_program(" load $0 #100\n load $1 #200 \n");
+        let result = parse_program(
+            r##" load $0 #100
+                 load $1 #200
+                 add $0 $1 $2
+                 hlt
+                 "##,
+        );
+
         assert_eq!(result.is_ok(), true);
 
         let (remaining_input, program) = result.unwrap();
@@ -200,6 +257,26 @@ mod tests {
                 operand1: Some(Token::Register(1)),
                 operand2: Some(Token::IntegerOperand(200)),
                 operand3: None
+            }
+        );
+
+        assert_eq!(
+            program.instructions[2],
+            AssemblyInstruction {
+                opcode: Token::Opcode(Opcode::ADD),
+                operand1: Some(Token::Register(0)),
+                operand2: Some(Token::Register(1)),
+                operand3: Some(Token::Register(2)),
+            }
+        );
+
+        assert_eq!(
+            program.instructions[3],
+            AssemblyInstruction {
+                opcode: Token::Opcode(Opcode::HLT),
+                operand1: None,
+                operand2: None,
+                operand3: None,
             }
         );
     }
