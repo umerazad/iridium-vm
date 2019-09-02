@@ -10,15 +10,17 @@ use nom::error::context;
 use crate::assembler::{AssemblyInstruction, Program, Token};
 use crate::instruction::Opcode;
 
+type ParseResult<'a, T> = IResult<&'a str, T>;
+
 /// Parses opcode part of the instruction.
-pub fn parse_opcode<'a>(input: &'a str) -> IResult<&'a str, Token> {
+pub fn parse_opcode(input: &str) -> ParseResult<Token> {
     let (next_input, result) = alpha1(input)?;
     Ok((next_input, Token::Opcode(Opcode::from(result))))
 }
 
 /// Parses the register part. i.e. $0. We don't enforce the register
 /// count limit here. It'll be taken care of at the assembler level.
-pub fn parse_register<'a>(input: &'a str) -> IResult<&'a str, Token> {
+pub fn parse_register(input: &str) -> ParseResult<Token> {
     map(
         context("register", preceded(tag("$"), cut(digit1))),
         |num: &str| Token::Register(num.parse::<u8>().unwrap()),
@@ -26,16 +28,19 @@ pub fn parse_register<'a>(input: &'a str) -> IResult<&'a str, Token> {
 }
 
 /// Parses the number operand #123.
-pub fn parse_number<'a>(input: &'a str) -> IResult<&'a str, Token> {
+pub fn parse_number(input: &str) -> ParseResult<Token> {
     map(
         context("integer", preceded(tag("#"), cut(digit1))),
         |num: &str| Token::IntegerOperand(num.parse::<i32>().unwrap()),
     )(input)
 }
 
+/// Parses opcode only instructions.
+//fn parse_instruction0<'a>(input: &'a str) -> IResult<&'a str, AssemblyInstruction> {}
+
 /// Parses instruction of the form
 ///     opcode $reg #num i.e. LOAD $1 #200
-pub fn parse_instruction1<'a>(input: &'a str) -> IResult<&'a str, AssemblyInstruction> {
+fn parse_instruction1(input: &str) -> ParseResult<AssemblyInstruction> {
     let parser = tuple((
         parse_opcode,
         preceded(multispace1, parse_register),
@@ -59,7 +64,7 @@ pub fn parse_instruction1<'a>(input: &'a str) -> IResult<&'a str, AssemblyInstru
 }
 
 /// Parses a complete program.
-pub fn parse_program<'a>(input: &'a str) -> IResult<&'a str, Program> {
+pub fn parse_program(input: &str) -> ParseResult<Program> {
     match many1(parse_instruction1)(input.trim()) {
         Ok((next_input, instructions)) => Ok((next_input, Program { instructions })),
         Err(e) => Err(e),
