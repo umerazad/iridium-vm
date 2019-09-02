@@ -103,7 +103,7 @@ fn parse_instruction2(input: &str) -> ParseResult<AssemblyInstruction> {
 
 /// Parses instruction of the form:
 ///       Opcode $reg i.e. Jmp $0
-fn parse_instruction3(input: &str) -> ParseResult<AssemblyInstruction> {
+fn parse_instruction4(input: &str) -> ParseResult<AssemblyInstruction> {
     let parser = tuple((parse_opcode, preceded(multispace1, parse_register)));
 
     match parser(input.trim()) {
@@ -128,7 +128,7 @@ pub fn parse_instruction(input: &str) -> ParseResult<AssemblyInstruction> {
     alt((
         parse_instruction1, // Opcode $reg #num -> LOAD $0 #99
         parse_instruction2, // Opcode $1 $2 $3  -> ADD $0 $2 $3
-        parse_instruction3, // Opcode $2        -> i.e. JMP $2
+        parse_instruction4, // Opcode $2        -> i.e. JMP $2
         parse_instruction0, // HLT
     ))(input)
 }
@@ -248,8 +248,8 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_instruction3() {
-        let result = parse_instruction3("  jmp $30  \t\n  ");
+    fn test_parse_instruction4() {
+        let result = parse_instruction4("  jmp $30  \t\n  ");
         assert_eq!(
             result,
             Ok((
