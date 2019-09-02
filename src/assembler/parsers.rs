@@ -101,6 +101,29 @@ fn parse_instruction2(input: &str) -> ParseResult<AssemblyInstruction> {
     }
 }
 
+/// Parses instructions of the form:
+///     Opcode $reg $reg i.e. EQ $0 $1
+fn parse_instruction3(input: &str) -> ParseResult<AssemblyInstruction> {
+    let parser = tuple((
+        parse_opcode,
+        preceded(multispace1, parse_register),
+        preceded(multispace1, parse_register),
+    ));
+
+    match parser(input.trim()) {
+        Ok((next_input, (opcode, r1, r2))) => Ok((
+            next_input,
+            AssemblyInstruction {
+                opcode: opcode,
+                operand1: Some(r1),
+                operand2: Some(r2),
+                operand3: None,
+            },
+        )),
+        Err(err) => Err(err),
+    }
+}
+
 /// Parses instruction of the form:
 ///       Opcode $reg i.e. Jmp $0
 fn parse_instruction4(input: &str) -> ParseResult<AssemblyInstruction> {
@@ -128,6 +151,7 @@ pub fn parse_instruction(input: &str) -> ParseResult<AssemblyInstruction> {
     alt((
         parse_instruction1, // Opcode $reg #num -> LOAD $0 #99
         parse_instruction2, // Opcode $1 $2 $3  -> ADD $0 $2 $3
+        parse_instruction3, // Opcode $1 $2     -> EQ $0 $2
         parse_instruction4, // Opcode $2        -> i.e. JMP $2
         parse_instruction0, // HLT
     ))(input)
@@ -248,6 +272,23 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_instruction3() {
+        let result = parse_instruction3("  EQ $0 $1 \t\n  ");
+        assert_eq!(
+            result,
+            Ok((
+                "",
+                AssemblyInstruction {
+                    opcode: Token::Opcode(Opcode::EQ),
+                    operand1: Some(Token::Register(0)),
+                    operand2: Some(Token::Register(1)),
+                    operand3: None,
+                }
+            ))
+        )
+    }
+
+    #[test]
     fn test_parse_instruction4() {
         let result = parse_instruction4("  jmp $30  \t\n  ");
         assert_eq!(
@@ -271,6 +312,7 @@ mod tests {
                  load $1 #200
                  add $0 $1 $2
                  jmp $9
+                 EQ $0 $2
                  hlt
                  "##,
         );
@@ -324,6 +366,16 @@ mod tests {
 
         assert_eq!(
             program.instructions[4],
+            AssemblyInstruction {
+                opcode: Token::Opcode(Opcode::EQ),
+                operand1: Some(Token::Register(0)),
+                operand2: Some(Token::Register(2)),
+                operand3: None,
+            }
+        );
+
+        assert_eq!(
+            program.instructions[5],
             AssemblyInstruction {
                 opcode: Token::Opcode(Opcode::HLT),
                 operand1: None,

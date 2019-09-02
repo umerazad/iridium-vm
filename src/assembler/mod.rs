@@ -54,6 +54,11 @@ impl AssemblyInstruction {
             }
         }
 
+        // Make sure that all instructions are 4 bytes even.
+        while result.len() < 4 {
+            result.push(0);
+        }
+
         result
     }
 }
@@ -99,13 +104,21 @@ mod tests {
 
     #[test]
     fn test_assembly_instruction_to_bytes() {
-        let inst = AssemblyInstruction {
+        let load = AssemblyInstruction {
             opcode: Token::Opcode(Opcode::LOAD),
             operand1: Some(Token::Register(10)),
             operand2: Some(Token::IntegerOperand(99)),
             operand3: None,
         };
-        assert_eq!(inst.to_bytes(), vec![Opcode::LOAD as u8, 10, 0, 99]);
+        assert_eq!(load.to_bytes(), vec![Opcode::LOAD as u8, 10, 0, 99]);
+
+        let eq = AssemblyInstruction {
+            opcode: Token::Opcode(Opcode::EQ),
+            operand1: Some(Token::Register(10)),
+            operand2: Some(Token::Register(20)),
+            operand3: None,
+        };
+        assert_eq!(eq.to_bytes(), vec![Opcode::EQ as u8, 10, 20, 0]);
     }
 
     #[test]
