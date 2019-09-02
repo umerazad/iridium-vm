@@ -36,7 +36,20 @@ pub fn parse_number(input: &str) -> ParseResult<Token> {
 }
 
 /// Parses opcode only instructions.
-//fn parse_instruction0<'a>(input: &'a str) -> IResult<&'a str, AssemblyInstruction> {}
+fn parse_instruction0(input: &str) -> ParseResult<AssemblyInstruction> {
+    match parse_opcode(input.trim()) {
+        Ok((next_input, opcode)) => Ok((
+            next_input,
+            AssemblyInstruction {
+                opcode: opcode,
+                operand1: None,
+                operand2: None,
+                operand3: None,
+            },
+        )),
+        Err(e) => Err(e),
+    }
+}
 
 /// Parses instruction of the form
 ///     opcode $reg #num i.e. LOAD $1 #200
@@ -123,6 +136,23 @@ mod tests {
         assert_eq!(
             parse_number("#1000 ;1k"),
             Ok((" ;1k", Token::IntegerOperand(1000)))
+        );
+    }
+
+    #[test]
+    fn test_parse_instruction0() {
+        let result = parse_instruction0("  hlt\t\n  ");
+        assert_eq!(
+            result,
+            Ok((
+                "",
+                AssemblyInstruction {
+                    opcode: Token::Opcode(Opcode::HLT),
+                    operand1: None,
+                    operand2: None,
+                    operand3: None
+                }
+            ))
         );
     }
 
