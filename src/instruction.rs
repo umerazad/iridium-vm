@@ -1,6 +1,6 @@
 /// Opcode enum represents the opcodes for all the instructions supported by the VM.
 /// Each opcode is represented by a u8 in the instruction format.
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Opcode {
     // Halt instruction.
     HLT,

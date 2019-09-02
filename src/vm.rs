@@ -222,8 +222,7 @@ impl VM {
     }
 
     fn next_16_bits(&mut self) -> u16 {
-        let result =
-            ((self.program[self.pc] as i32) << 8 | self.program[self.pc + 1] as i32) as u16;
+        let result = u16::from(self.program[self.pc]) << 8 | u16::from(self.program[self.pc + 1]);
         self.pc += 2;
         result
     }
@@ -293,7 +292,7 @@ mod tests {
     #[test]
     fn test_load() {
         let mut vm = VM::new();
-        // LOAD #0 500 in little endian.
+        // LOAD #0 500
         vm.program = vec![1, 0, 1, 244];
         vm.run();
         assert_eq!(vm.registers[0], 500);
