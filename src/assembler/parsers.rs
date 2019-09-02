@@ -1,12 +1,13 @@
 use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, digit1, multispace1};
 use nom::combinator::{cut, map};
+use nom::multi::many1;
 use nom::sequence::{preceded, tuple};
 use nom::IResult;
 
 use nom::error::context;
 
-use crate::assembler::{AssemblyInstruction, Token};
+use crate::assembler::{AssemblyInstruction, Program, Token};
 use crate::instruction::Opcode;
 
 /// Parses opcode part of the instruction.
@@ -54,6 +55,14 @@ pub fn parse_instruction1<'a>(input: &'a str) -> IResult<&'a str, AssemblyInstru
             ))
         }
         Err(err) => Err(err),
+    }
+}
+
+/// Parses a complete program.
+pub fn parse_program<'a>(input: &'a str) -> IResult<&'a str, Program> {
+    match many1(parse_instruction1)(input.trim()) {
+        Ok((next_input, instructions)) => Ok((next_input, Program { instructions })),
+        Err(e) => Err(e),
     }
 }
 
@@ -109,5 +118,36 @@ mod tests {
                 }
             ))
         )
+    }
+
+    #[test]
+    fn test_parse_program() {
+        let result = parse_program(" load $0 #100\n load $1 #200 \n");
+        assert_eq!(result.is_ok(), true);
+
+        let (remaining_input, program) = result.unwrap();
+
+        // Ensure that the complete program is consumed.
+        assert_eq!("", remaining_input);
+
+        assert_eq!(
+            program.instructions[0],
+            AssemblyInstruction {
+                opcode: Token::Opcode(Opcode::LOAD),
+                operand1: Some(Token::Register(0)),
+                operand2: Some(Token::IntegerOperand(100)),
+                operand3: None
+            }
+        );
+
+        assert_eq!(
+            program.instructions[1],
+            AssemblyInstruction {
+                opcode: Token::Opcode(Opcode::LOAD),
+                operand1: Some(Token::Register(1)),
+                operand2: Some(Token::IntegerOperand(200)),
+                operand3: None
+            }
+        );
     }
 }
