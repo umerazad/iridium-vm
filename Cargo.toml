@@ -11,6 +11,9 @@ license = "MIT"
 structopt = "0.3.0"
 rustyline = "5.0.2"
 nom = "5.0.1"
+num-derive = "0.2"
+num-traits = "0.2"
+num = "0.2.0"
 
 [[bin]]
 name = "iridium"
