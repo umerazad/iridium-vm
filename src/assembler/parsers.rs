@@ -1,12 +1,12 @@
 use nom::bytes::complete::tag;
-use nom::character::complete::{alpha1, digit1};
+use nom::character::complete::{alpha1, digit1, multispace1};
 use nom::combinator::{cut, map};
-use nom::sequence::preceded;
+use nom::sequence::{preceded, tuple};
 use nom::IResult;
 
 use nom::error::context;
 
-use crate::assembler::Token;
+use crate::assembler::{AssemblyInstruction, Token};
 use crate::instruction::Opcode;
 
 /// Parses opcode part of the instruction.
@@ -30,6 +30,31 @@ pub fn parse_number<'a>(input: &'a str) -> IResult<&'a str, Token> {
         context("integer", preceded(tag("#"), cut(digit1))),
         |num: &str| Token::IntegerOperand(num.parse::<i32>().unwrap()),
     )(input)
+}
+
+/// Parses instruction of the form
+///     opcode $reg #num i.e. LOAD $1 #200
+pub fn parse_instruction1<'a>(input: &'a str) -> IResult<&'a str, AssemblyInstruction> {
+    let parser = tuple((
+        parse_opcode,
+        preceded(multispace1, parse_register),
+        preceded(multispace1, parse_number),
+    ));
+
+    match parser(input.trim()) {
+        Ok((next_input, (opcode, reg, num))) => {
+            Ok((
+                next_input,
+                AssemblyInstruction {
+                    opcode: opcode,
+                    operand1: Some(reg),
+                    operand2: Some(num),
+                    operand3: None, // Not used in this instruction format.
+                },
+            ))
+        }
+        Err(err) => Err(err),
+    }
 }
 
 #[cfg(test)]
@@ -67,5 +92,22 @@ mod tests {
             parse_number("#1000 ;1k"),
             Ok((" ;1k", Token::IntegerOperand(1000)))
         );
+    }
+
+    #[test]
+    fn test_parse_instruction1() {
+        let result = parse_instruction1("  load   $9   #299  \t\n");
+        assert_eq!(
+            result,
+            Ok((
+                "",
+                AssemblyInstruction {
+                    opcode: Token::Opcode(Opcode::LOAD),
+                    operand1: Some(Token::Register(9)),
+                    operand2: Some(Token::IntegerOperand(299)),
+                    operand3: None
+                }
+            ))
+        )
     }
 }
