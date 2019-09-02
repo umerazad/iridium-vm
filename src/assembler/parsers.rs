@@ -74,7 +74,25 @@ mod tests {
 
     #[test]
     fn test_parse_opcode() {
+        assert_eq!(parse_opcode("HLT"), Ok(("", Token::Opcode(Opcode::HLT))));
         assert_eq!(parse_opcode("load"), Ok(("", Token::Opcode(Opcode::LOAD))));
+        assert_eq!(parse_opcode("AdD"), Ok(("", Token::Opcode(Opcode::ADD))));
+        assert_eq!(parse_opcode("mUL"), Ok(("", Token::Opcode(Opcode::MUL))));
+        assert_eq!(parse_opcode("SuB"), Ok(("", Token::Opcode(Opcode::SUB))));
+        assert_eq!(parse_opcode("DIv"), Ok(("", Token::Opcode(Opcode::DIV))));
+        assert_eq!(parse_opcode("jMP"), Ok(("", Token::Opcode(Opcode::JMP))));
+        assert_eq!(parse_opcode("jmpf"), Ok(("", Token::Opcode(Opcode::JMPF))));
+        assert_eq!(parse_opcode("jmpB"), Ok(("", Token::Opcode(Opcode::JMPB))));
+        assert_eq!(parse_opcode("Eq"), Ok(("", Token::Opcode(Opcode::EQ))));
+        assert_eq!(parse_opcode("neQ"), Ok(("", Token::Opcode(Opcode::NEQ))));
+        assert_eq!(parse_opcode("GT"), Ok(("", Token::Opcode(Opcode::GT))));
+        assert_eq!(parse_opcode("GTE"), Ok(("", Token::Opcode(Opcode::GTE))));
+        assert_eq!(parse_opcode("LT"), Ok(("", Token::Opcode(Opcode::LT))));
+        assert_eq!(parse_opcode("LTE"), Ok(("", Token::Opcode(Opcode::LTE))));
+        assert_eq!(parse_opcode("JEQ"), Ok(("", Token::Opcode(Opcode::JEQ))));
+        assert_eq!(parse_opcode("JNEQ"), Ok(("", Token::Opcode(Opcode::JNEQ))));
+        assert_eq!(parse_opcode("IGL"), Ok(("", Token::Opcode(Opcode::IGL))));
+
         assert_eq!(
             parse_opcode("hlt bla bla"),
             Ok((" bla bla", Token::Opcode(Opcode::HLT)))
