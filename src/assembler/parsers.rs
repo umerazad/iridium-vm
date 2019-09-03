@@ -1,6 +1,6 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::character::complete::{alpha1, alphanumeric1, digit1, multispace1};
+use nom::character::complete::{alpha1, alphanumeric1, digit1};
 use nom::combinator::{cut, map, opt};
 use nom::multi::many1;
 use nom::sequence::{preceded, terminated, tuple};
@@ -68,7 +68,7 @@ fn parse_directive_declaration(input: &str) -> ParseResult<Token> {
 
 /// Parses a labeled directive.
 ///  howdy: .asciiz 'Hello'
-fn parse_directive_combined(input: &str) -> ParseResult<AssemblyInstruction> {
+fn parse_directive(input: &str) -> ParseResult<AssemblyInstruction> {
     let parser = tuple((
         opt(parse_label_declaration),
         parse_directive_declaration,
@@ -93,126 +93,38 @@ fn parse_directive_combined(input: &str) -> ParseResult<AssemblyInstruction> {
     }
 }
 
-/// Parses opcode only instructions.
-fn parse_instruction0(input: &str) -> ParseResult<AssemblyInstruction> {
-    match parse_opcode(input.trim()) {
-        Ok((next_input, opcode)) => Ok((
-            next_input,
-            AssemblyInstruction {
-                opcode: Some(opcode),
-                ..Default::default()
-            },
-        )),
-        Err(e) => Err(e),
-    }
-}
-
-/// Parses instruction of the form
-///     opcode $reg #num i.e. LOAD $1 #200
-fn parse_instruction1(input: &str) -> ParseResult<AssemblyInstruction> {
-    let parser = tuple((
-        parse_opcode,
-        preceded(multispace1, parse_register),
-        preceded(multispace1, parse_number),
-    ));
-
-    match parser(input.trim()) {
-        Ok((next_input, (opcode, reg, num))) => Ok((
-            next_input,
-            AssemblyInstruction {
-                opcode: Some(opcode),
-                operand1: Some(reg),
-                operand2: Some(num),
-                ..Default::default()
-            },
-        )),
-        Err(err) => Err(err),
-    }
-}
-
-/// Parses instructions of the form:
-///     Opcode $reg $reg $reg i.e. ADD $0 $1 $2
-fn parse_instruction2(input: &str) -> ParseResult<AssemblyInstruction> {
-    let parser = tuple((
-        parse_opcode,
-        preceded(multispace1, parse_register),
-        preceded(multispace1, parse_register),
-        preceded(multispace1, parse_register),
-    ));
-
-    match parser(input.trim()) {
-        Ok((next_input, (opcode, r1, r2, r3))) => Ok((
-            next_input,
-            AssemblyInstruction {
-                opcode: Some(opcode),
-                operand1: Some(r1),
-                operand2: Some(r2),
-                operand3: Some(r3),
-                ..Default::default()
-            },
-        )),
-        Err(err) => Err(err),
-    }
-}
-
-/// Parses instructions of the form:
-///     Opcode $reg $reg i.e. EQ $0 $1
-fn parse_instruction3(input: &str) -> ParseResult<AssemblyInstruction> {
-    let parser = tuple((
-        parse_opcode,
-        preceded(multispace1, parse_register),
-        preceded(multispace1, parse_register),
-    ));
-
-    match parser(input.trim()) {
-        Ok((next_input, (opcode, r1, r2))) => Ok((
-            next_input,
-            AssemblyInstruction {
-                opcode: Some(opcode),
-                operand1: Some(r1),
-                operand2: Some(r2),
-                ..Default::default()
-            },
-        )),
-        Err(err) => Err(err),
-    }
-}
-
-/// Parses instruction of the form:
-///       Opcode $reg i.e. Jmp $0
-fn parse_instruction4(input: &str) -> ParseResult<AssemblyInstruction> {
-    let parser = tuple((parse_opcode, preceded(multispace1, parse_register)));
-
-    match parser(input.trim()) {
-        Ok((next_input, (opcode, r1))) => Ok((
-            next_input,
-            AssemblyInstruction {
-                opcode: Some(opcode),
-                operand1: Some(r1),
-                ..Default::default()
-            },
-        )),
-        Err(err) => Err(err),
-    }
-}
-
 /// This is the high level instruction parser combinator that parses
 /// all forms of instructions.
 pub fn parse_instruction(input: &str) -> ParseResult<AssemblyInstruction> {
     // Its important that the opcode only instruction is parsed as the last resort
     // given that its format matches all other types of instructions.
-    alt((
-        parse_instruction1, // Opcode $reg #num -> LOAD $0 #99
-        parse_instruction2, // Opcode $1 $2 $3  -> ADD $0 $2 $3
-        parse_instruction3, // Opcode $1 $2     -> EQ $0 $2
-        parse_instruction4, // Opcode $2        -> i.e. JMP $2
-        parse_instruction0, // HLT
-    ))(input)
+    let parser = tuple((
+        opt(parse_label_declaration),
+        parse_opcode,
+        opt(parse_operand),
+        opt(parse_operand),
+        opt(parse_operand),
+    ));
+
+    match parser(input.trim()) {
+        Ok((next_input, (label, opcode, op1, op2, op3))) => Ok((
+            next_input,
+            AssemblyInstruction {
+                opcode: Some(opcode),
+                label: label,
+                operand1: op1,
+                operand2: op2,
+                operand3: op3,
+                ..Default::default()
+            },
+        )),
+        Err(err) => Err(err),
+    }
 }
 
 /// Parses a complete program.
 pub fn parse_program(input: &str) -> ParseResult<Program> {
-    match many1(parse_instruction)(input.trim()) {
+    match many1(alt((parse_instruction, parse_directive)))(input.trim()) {
         Ok((next_input, instructions)) => Ok((next_input, Program { instructions })),
         Err(e) => Err(e),
     }
@@ -305,7 +217,7 @@ mod tests {
     #[test]
     fn test_parse_directive_combined() {
         // TODO: Fix this test once we've added support for string literals.
-        let result = parse_directive_combined("test1: .asciiz ");
+        let result = parse_directive("test1: .asciiz ");
         assert_eq!(result.is_ok(), true);
 
         let (_, directive) = result.unwrap();
@@ -321,98 +233,16 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_instruction0() {
-        let result = parse_instruction0("  hlt\t\n  ");
-        assert_eq!(
-            result,
-            Ok((
-                "",
-                AssemblyInstruction {
-                    opcode: Some(Token::Opcode(Opcode::HLT)),
-                    ..Default::default()
-                }
-            ))
-        );
-    }
-
-    #[test]
-    fn test_parse_instruction1() {
-        let result = parse_instruction1("  load   $9   #299  \t\n");
-        assert_eq!(
-            result,
-            Ok((
-                "",
-                AssemblyInstruction {
-                    opcode: Some(Token::Opcode(Opcode::LOAD)),
-                    operand1: Some(Token::Register(9)),
-                    operand2: Some(Token::IntegerOperand(299)),
-                    ..Default::default()
-                }
-            ))
-        )
-    }
-
-    #[test]
-    fn test_parse_instruction2() {
-        let result = parse_instruction2("  add $0 $1 $3 \t\n  ");
-        assert_eq!(
-            result,
-            Ok((
-                "",
-                AssemblyInstruction {
-                    opcode: Some(Token::Opcode(Opcode::ADD)),
-                    operand1: Some(Token::Register(0)),
-                    operand2: Some(Token::Register(1)),
-                    operand3: Some(Token::Register(3)),
-                    ..Default::default()
-                }
-            ))
-        )
-    }
-
-    #[test]
-    fn test_parse_instruction3() {
-        let result = parse_instruction3("  EQ $0 $1 \t\n  ");
-        assert_eq!(
-            result,
-            Ok((
-                "",
-                AssemblyInstruction {
-                    opcode: Some(Token::Opcode(Opcode::EQ)),
-                    operand1: Some(Token::Register(0)),
-                    operand2: Some(Token::Register(1)),
-                    ..Default::default()
-                }
-            ))
-        )
-    }
-
-    #[test]
-    fn test_parse_instruction4() {
-        let result = parse_instruction4("  jmp $30  \t\n  ");
-        assert_eq!(
-            result,
-            Ok((
-                "",
-                AssemblyInstruction {
-                    opcode: Some(Token::Opcode(Opcode::JMP)),
-                    operand1: Some(Token::Register(30)),
-                    ..Default::default()
-                }
-            ))
-        )
-    }
-
-    #[test]
     fn test_parse_program() {
         let result = parse_program(
-            r##" load $0 #100
-                 load $1 #200
-                 add $0 $1 $2
-                 jmp $9
-                 EQ $0 $2
-                 hlt
-                 "##,
+            r##"max: .something #99
+                load $0 #100
+                label1: load $1 #200
+                add $0 $1 $2
+                jmp $9
+                EQ $0 $2
+                hlt
+                "##,
         );
 
         assert_eq!(result.is_ok(), true);
@@ -425,9 +255,9 @@ mod tests {
         assert_eq!(
             program.instructions[0],
             AssemblyInstruction {
-                opcode: Some(Token::Opcode(Opcode::LOAD)),
-                operand1: Some(Token::Register(0)),
-                operand2: Some(Token::IntegerOperand(100)),
+                label: Some(Token::LabelDeclaration("max".to_string())),
+                directive: Some(Token::Directive("something".to_string())),
+                operand1: Some(Token::IntegerOperand(99)),
                 ..Default::default()
             }
         );
@@ -436,6 +266,17 @@ mod tests {
             program.instructions[1],
             AssemblyInstruction {
                 opcode: Some(Token::Opcode(Opcode::LOAD)),
+                operand1: Some(Token::Register(0)),
+                operand2: Some(Token::IntegerOperand(100)),
+                ..Default::default()
+            }
+        );
+
+        assert_eq!(
+            program.instructions[2],
+            AssemblyInstruction {
+                opcode: Some(Token::Opcode(Opcode::LOAD)),
+                label: Some(Token::LabelDeclaration("label1".to_string())),
                 operand1: Some(Token::Register(1)),
                 operand2: Some(Token::IntegerOperand(200)),
                 ..Default::default()
@@ -443,7 +284,7 @@ mod tests {
         );
 
         assert_eq!(
-            program.instructions[2],
+            program.instructions[3],
             AssemblyInstruction {
                 opcode: Some(Token::Opcode(Opcode::ADD)),
                 operand1: Some(Token::Register(0)),
@@ -454,7 +295,7 @@ mod tests {
         );
 
         assert_eq!(
-            program.instructions[3],
+            program.instructions[4],
             AssemblyInstruction {
                 opcode: Some(Token::Opcode(Opcode::JMP)),
                 operand1: Some(Token::Register(9)),
@@ -463,7 +304,7 @@ mod tests {
         );
 
         assert_eq!(
-            program.instructions[4],
+            program.instructions[5],
             AssemblyInstruction {
                 opcode: Some(Token::Opcode(Opcode::EQ)),
                 operand1: Some(Token::Register(0)),
@@ -473,7 +314,7 @@ mod tests {
         );
 
         assert_eq!(
-            program.instructions[5],
+            program.instructions[6],
             AssemblyInstruction {
                 opcode: Some(Token::Opcode(Opcode::HLT)),
                 ..Default::default()
