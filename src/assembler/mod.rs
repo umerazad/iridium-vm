@@ -14,6 +14,9 @@ pub enum Token {
     Opcode(Opcode),
     Register(u8),
     IntegerOperand(i32),
+    LabelDeclaration(String),
+    LabelUsage(String),
+    Directive(String),
 }
 
 impl Token {
@@ -29,6 +32,7 @@ impl Token {
                 let bytes = (*v as u16).to_le_bytes();
                 return vec![bytes[1], bytes[0]];
             }
+            _ => unimplemented!(),
         }
     }
 }
@@ -36,7 +40,7 @@ impl Token {
 /// Representation of a complete assembly instruction.
 #[derive(Debug, PartialEq)]
 pub struct AssemblyInstruction {
-    pub opcode: Token,
+    pub opcode: Option<Token>,
     pub operand1: Option<Token>,
     pub operand2: Option<Token>,
     pub operand3: Option<Token>,
@@ -46,7 +50,7 @@ impl AssemblyInstruction {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut result = Vec::new();
         match &self.opcode {
-            Token::Opcode(_) => result.extend(Token::to_bytes(&self.opcode)),
+            Some(op) => result.extend(Token::to_bytes(op)),
             bad_token => {
                 eprintln!("Fetal: {:?} found instead of opcode.", bad_token);
                 std::process::exit(1);
@@ -111,7 +115,7 @@ mod tests {
     #[test]
     fn test_assembly_instruction_to_bytes() {
         let load = AssemblyInstruction {
-            opcode: Token::Opcode(Opcode::LOAD),
+            opcode: Some(Token::Opcode(Opcode::LOAD)),
             operand1: Some(Token::Register(10)),
             operand2: Some(Token::IntegerOperand(99)),
             operand3: None,
@@ -119,7 +123,7 @@ mod tests {
         assert_eq!(load.to_bytes(), vec![Opcode::LOAD as u8, 10, 0, 99]);
 
         let eq = AssemblyInstruction {
-            opcode: Token::Opcode(Opcode::EQ),
+            opcode: Some(Token::Opcode(Opcode::EQ)),
             operand1: Some(Token::Register(10)),
             operand2: Some(Token::Register(20)),
             operand3: None,
@@ -132,13 +136,13 @@ mod tests {
         let program = Program {
             instructions: vec![
                 AssemblyInstruction {
-                    opcode: Token::Opcode(Opcode::LOAD),
+                    opcode: Some(Token::Opcode(Opcode::LOAD)),
                     operand1: Some(Token::Register(0)),
                     operand2: Some(Token::IntegerOperand(100)),
                     operand3: None,
                 },
                 AssemblyInstruction {
-                    opcode: Token::Opcode(Opcode::LOAD),
+                    opcode: Some(Token::Opcode(Opcode::LOAD)),
                     operand1: Some(Token::Register(1)),
                     operand2: Some(Token::IntegerOperand(200)),
                     operand3: None,

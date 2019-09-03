@@ -42,7 +42,7 @@ fn parse_instruction0(input: &str) -> ParseResult<AssemblyInstruction> {
         Ok((next_input, opcode)) => Ok((
             next_input,
             AssemblyInstruction {
-                opcode: opcode,
+                opcode: Some(opcode),
                 operand1: None,
                 operand2: None,
                 operand3: None,
@@ -66,7 +66,7 @@ fn parse_instruction1(input: &str) -> ParseResult<AssemblyInstruction> {
             Ok((
                 next_input,
                 AssemblyInstruction {
-                    opcode: opcode,
+                    opcode: Some(opcode),
                     operand1: Some(reg),
                     operand2: Some(num),
                     operand3: None, // Not used in this instruction format.
@@ -91,7 +91,7 @@ fn parse_instruction2(input: &str) -> ParseResult<AssemblyInstruction> {
         Ok((next_input, (opcode, r1, r2, r3))) => Ok((
             next_input,
             AssemblyInstruction {
-                opcode: opcode,
+                opcode: Some(opcode),
                 operand1: Some(r1),
                 operand2: Some(r2),
                 operand3: Some(r3),
@@ -114,7 +114,7 @@ fn parse_instruction3(input: &str) -> ParseResult<AssemblyInstruction> {
         Ok((next_input, (opcode, r1, r2))) => Ok((
             next_input,
             AssemblyInstruction {
-                opcode: opcode,
+                opcode: Some(opcode),
                 operand1: Some(r1),
                 operand2: Some(r2),
                 operand3: None,
@@ -133,7 +133,7 @@ fn parse_instruction4(input: &str) -> ParseResult<AssemblyInstruction> {
         Ok((next_input, (opcode, r1))) => Ok((
             next_input,
             AssemblyInstruction {
-                opcode: opcode,
+                opcode: Some(opcode),
                 operand1: Some(r1),
                 operand2: None,
                 operand3: None,
@@ -228,7 +228,7 @@ mod tests {
             Ok((
                 "",
                 AssemblyInstruction {
-                    opcode: Token::Opcode(Opcode::HLT),
+                    opcode: Some(Token::Opcode(Opcode::HLT)),
                     operand1: None,
                     operand2: None,
                     operand3: None
@@ -245,7 +245,7 @@ mod tests {
             Ok((
                 "",
                 AssemblyInstruction {
-                    opcode: Token::Opcode(Opcode::LOAD),
+                    opcode: Some(Token::Opcode(Opcode::LOAD)),
                     operand1: Some(Token::Register(9)),
                     operand2: Some(Token::IntegerOperand(299)),
                     operand3: None
@@ -262,7 +262,7 @@ mod tests {
             Ok((
                 "",
                 AssemblyInstruction {
-                    opcode: Token::Opcode(Opcode::ADD),
+                    opcode: Some(Token::Opcode(Opcode::ADD)),
                     operand1: Some(Token::Register(0)),
                     operand2: Some(Token::Register(1)),
                     operand3: Some(Token::Register(3)),
@@ -279,7 +279,7 @@ mod tests {
             Ok((
                 "",
                 AssemblyInstruction {
-                    opcode: Token::Opcode(Opcode::EQ),
+                    opcode: Some(Token::Opcode(Opcode::EQ)),
                     operand1: Some(Token::Register(0)),
                     operand2: Some(Token::Register(1)),
                     operand3: None,
@@ -296,7 +296,7 @@ mod tests {
             Ok((
                 "",
                 AssemblyInstruction {
-                    opcode: Token::Opcode(Opcode::JMP),
+                    opcode: Some(Token::Opcode(Opcode::JMP)),
                     operand1: Some(Token::Register(30)),
                     operand2: None,
                     operand3: None,
@@ -327,7 +327,7 @@ mod tests {
         assert_eq!(
             program.instructions[0],
             AssemblyInstruction {
-                opcode: Token::Opcode(Opcode::LOAD),
+                opcode: Some(Token::Opcode(Opcode::LOAD)),
                 operand1: Some(Token::Register(0)),
                 operand2: Some(Token::IntegerOperand(100)),
                 operand3: None
@@ -337,7 +337,7 @@ mod tests {
         assert_eq!(
             program.instructions[1],
             AssemblyInstruction {
-                opcode: Token::Opcode(Opcode::LOAD),
+                opcode: Some(Token::Opcode(Opcode::LOAD)),
                 operand1: Some(Token::Register(1)),
                 operand2: Some(Token::IntegerOperand(200)),
                 operand3: None
@@ -347,7 +347,7 @@ mod tests {
         assert_eq!(
             program.instructions[2],
             AssemblyInstruction {
-                opcode: Token::Opcode(Opcode::ADD),
+                opcode: Some(Token::Opcode(Opcode::ADD)),
                 operand1: Some(Token::Register(0)),
                 operand2: Some(Token::Register(1)),
                 operand3: Some(Token::Register(2)),
@@ -357,7 +357,7 @@ mod tests {
         assert_eq!(
             program.instructions[3],
             AssemblyInstruction {
-                opcode: Token::Opcode(Opcode::JMP),
+                opcode: Some(Token::Opcode(Opcode::JMP)),
                 operand1: Some(Token::Register(9)),
                 operand2: None,
                 operand3: None,
@@ -367,7 +367,7 @@ mod tests {
         assert_eq!(
             program.instructions[4],
             AssemblyInstruction {
-                opcode: Token::Opcode(Opcode::EQ),
+                opcode: Some(Token::Opcode(Opcode::EQ)),
                 operand1: Some(Token::Register(0)),
                 operand2: Some(Token::Register(2)),
                 operand3: None,
@@ -377,7 +377,7 @@ mod tests {
         assert_eq!(
             program.instructions[5],
             AssemblyInstruction {
-                opcode: Token::Opcode(Opcode::HLT),
+                opcode: Some(Token::Opcode(Opcode::HLT)),
                 operand1: None,
                 operand2: None,
                 operand3: None,
