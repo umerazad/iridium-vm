@@ -38,9 +38,11 @@ impl Token {
 }
 
 /// Representation of a complete assembly instruction.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct AssemblyInstruction {
     pub opcode: Option<Token>,
+    pub label: Option<Token>,
+    pub directive: Option<Token>,
     pub operand1: Option<Token>,
     pub operand2: Option<Token>,
     pub operand3: Option<Token>,
@@ -118,7 +120,7 @@ mod tests {
             opcode: Some(Token::Opcode(Opcode::LOAD)),
             operand1: Some(Token::Register(10)),
             operand2: Some(Token::IntegerOperand(99)),
-            operand3: None,
+            ..Default::default()
         };
         assert_eq!(load.to_bytes(), vec![Opcode::LOAD as u8, 10, 0, 99]);
 
@@ -126,7 +128,7 @@ mod tests {
             opcode: Some(Token::Opcode(Opcode::EQ)),
             operand1: Some(Token::Register(10)),
             operand2: Some(Token::Register(20)),
-            operand3: None,
+            ..Default::default()
         };
         assert_eq!(eq.to_bytes(), vec![Opcode::EQ as u8, 10, 20, PADDING]);
     }
@@ -139,13 +141,13 @@ mod tests {
                     opcode: Some(Token::Opcode(Opcode::LOAD)),
                     operand1: Some(Token::Register(0)),
                     operand2: Some(Token::IntegerOperand(100)),
-                    operand3: None,
+                    ..Default::default()
                 },
                 AssemblyInstruction {
                     opcode: Some(Token::Opcode(Opcode::LOAD)),
                     operand1: Some(Token::Register(1)),
                     operand2: Some(Token::IntegerOperand(200)),
-                    operand3: None,
+                    ..Default::default()
                 },
             ],
         };

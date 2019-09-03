@@ -1,9 +1,9 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::character::complete::{alpha1, digit1, multispace1};
-use nom::combinator::{cut, map};
+use nom::character::complete::{alpha1, alphanumeric1, digit1, multispace1};
+use nom::combinator::{cut, map, opt};
 use nom::multi::many1;
-use nom::sequence::{preceded, tuple};
+use nom::sequence::{preceded, terminated, tuple};
 use nom::IResult;
 
 use nom::error::context;
@@ -15,7 +15,7 @@ type ParseResult<'a, T> = IResult<&'a str, T>;
 
 /// Parses opcode part of the instruction.
 pub fn parse_opcode(input: &str) -> ParseResult<Token> {
-    let (next_input, result) = alpha1(input)?;
+    let (next_input, result) = alpha1(input.trim())?;
     Ok((next_input, Token::Opcode(Opcode::from(result))))
 }
 
@@ -25,7 +25,7 @@ pub fn parse_register(input: &str) -> ParseResult<Token> {
     map(
         context("register", preceded(tag("$"), cut(digit1))),
         |num: &str| Token::Register(num.parse::<u8>().unwrap()),
-    )(input)
+    )(input.trim())
 }
 
 /// Parses the number operand #123.
@@ -36,6 +36,63 @@ pub fn parse_number(input: &str) -> ParseResult<Token> {
     )(input)
 }
 
+/// Parses an operand.
+pub fn parse_operand(input: &str) -> ParseResult<Token> {
+    alt((parse_number, parse_register))(input.trim())
+}
+
+/// Parses a label declaration. Labels are of the form
+/// label_1: ....
+fn parse_label_declaration(input: &str) -> ParseResult<Token> {
+    map(
+        context("label declaration", terminated(alphanumeric1, tag(":"))),
+        |label: &str| Token::LabelDeclaration(label.to_string()),
+    )(input.trim())
+}
+
+/// Parses label usage i.e. @label
+fn parse_label_usage(input: &str) -> ParseResult<Token> {
+    map(
+        context("label usage", preceded(tag("@"), alphanumeric1)),
+        |label: &str| Token::LabelUsage(label.to_string()),
+    )(input.trim())
+}
+
+/// Parses directive declaration i.e. .code or .data or .asciiz
+fn parse_directive_declaration(input: &str) -> ParseResult<Token> {
+    map(
+        context("directive", preceded(tag("."), alphanumeric1)),
+        |s: &str| Token::Directive(s.to_string()),
+    )(input.trim())
+}
+
+/// Parses a labeled directive.
+///  howdy: .asciiz 'Hello'
+fn parse_directive_combined(input: &str) -> ParseResult<AssemblyInstruction> {
+    let parser = tuple((
+        opt(parse_label_declaration),
+        parse_directive_declaration,
+        opt(parse_operand),
+        opt(parse_operand),
+        opt(parse_operand),
+    ));
+
+    match parser(input.trim()) {
+        Ok((next_input, (label, directive, op1, op2, op3))) => Ok((
+            next_input,
+            AssemblyInstruction {
+                label: label, // opt returns an Option
+                directive: Some(directive),
+                operand1: op1,
+                operand2: op2,
+                operand3: op3,
+                ..Default::default()
+            },
+        )),
+        Err(e) => Err(e),
+    }
+}
+
 /// Parses opcode only instructions.
 fn parse_instruction0(input: &str) -> ParseResult<AssemblyInstruction> {
     match parse_opcode(input.trim()) {
@@ -43,9 +100,7 @@ fn parse_instruction0(input: &str) -> ParseResult<AssemblyInstruction> {
             next_input,
             AssemblyInstruction {
                 opcode: Some(opcode),
-                operand1: None,
-                operand2: None,
-                operand3: None,
+                ..Default::default()
             },
         )),
         Err(e) => Err(e),
@@ -62,17 +117,15 @@ fn parse_instruction1(input: &str) -> ParseResult<AssemblyInstruction> {
     ));
 
     match parser(input.trim()) {
-        Ok((next_input, (opcode, reg, num))) => {
-            Ok((
-                next_input,
-                AssemblyInstruction {
-                    opcode: Some(opcode),
-                    operand1: Some(reg),
-                    operand2: Some(num),
-                    operand3: None, // Not used in this instruction format.
-                },
-            ))
-        }
+        Ok((next_input, (opcode, reg, num))) => Ok((
+            next_input,
+            AssemblyInstruction {
+                opcode: Some(opcode),
+                operand1: Some(reg),
+                operand2: Some(num),
+                ..Default::default()
+            },
+        )),
         Err(err) => Err(err),
     }
 }
@@ -95,6 +148,7 @@ fn parse_instruction2(input: &str) -> ParseResult<AssemblyInstruction> {
                 operand1: Some(r1),
                 operand2: Some(r2),
                 operand3: Some(r3),
+                ..Default::default()
             },
         )),
         Err(err) => Err(err),
@@ -117,7 +171,7 @@ fn parse_instruction3(input: &str) -> ParseResult<AssemblyInstruction> {
                 opcode: Some(opcode),
                 operand1: Some(r1),
                 operand2: Some(r2),
-                operand3: None,
+                ..Default::default()
             },
         )),
         Err(err) => Err(err),
@@ -135,8 +189,7 @@ fn parse_instruction4(input: &str) -> ParseResult<AssemblyInstruction> {
             AssemblyInstruction {
                 opcode: Some(opcode),
                 operand1: Some(r1),
-                operand2: None,
-                operand3: None,
+                ..Default::default()
             },
         )),
         Err(err) => Err(err),
@@ -219,6 +272,53 @@ mod tests {
             Ok((" ;1k", Token::IntegerOperand(1000)))
         );
     }
+    #[test]
+    fn test_parse_operand() {
+        assert_eq!(parse_operand(" #99 "), Ok(("", Token::IntegerOperand(99))));
+        assert_eq!(parse_operand(" $23 "), Ok(("", Token::Register(23))));
+    }
+
+    #[test]
+    fn test_parse_label_declaration() {
+        assert_eq!(
+            parse_label_declaration("label1: "),
+            Ok(("", Token::LabelDeclaration("label1".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_parse_label_usage() {
+        assert_eq!(
+            parse_label_usage("@label1"),
+            Ok(("", Token::LabelUsage("label1".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_parse_directive_declaration() {
+        assert_eq!(
+            parse_directive_declaration(".code "),
+            Ok(("", Token::Directive("code".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_parse_directive_combined() {
+        // TODO: Fix this test once we've added support for string literals.
+        let result = parse_directive_combined("test1: .asciiz ");
+        assert_eq!(result.is_ok(), true);
+
+        let (_, directive) = result.unwrap();
+
+        assert_eq!(
+            directive,
+            AssemblyInstruction {
+                label: Some(Token::LabelDeclaration("test1".to_string())),
+                directive: Some(Token::Directive("asciiz".to_string())),
+                ..Default::default()
+            }
+        );
+    }
 
     #[test]
     fn test_parse_instruction0() {
@@ -229,9 +329,7 @@ mod tests {
                 "",
                 AssemblyInstruction {
                     opcode: Some(Token::Opcode(Opcode::HLT)),
-                    operand1: None,
-                    operand2: None,
-                    operand3: None
+                    ..Default::default()
                 }
             ))
         );
@@ -248,7 +346,7 @@ mod tests {
                     opcode: Some(Token::Opcode(Opcode::LOAD)),
                     operand1: Some(Token::Register(9)),
                     operand2: Some(Token::IntegerOperand(299)),
-                    operand3: None
+                    ..Default::default()
                 }
             ))
         )
@@ -266,6 +364,7 @@ mod tests {
                     operand1: Some(Token::Register(0)),
                     operand2: Some(Token::Register(1)),
                     operand3: Some(Token::Register(3)),
+                    ..Default::default()
                 }
             ))
         )
@@ -282,7 +381,7 @@ mod tests {
                     opcode: Some(Token::Opcode(Opcode::EQ)),
                     operand1: Some(Token::Register(0)),
                     operand2: Some(Token::Register(1)),
-                    operand3: None,
+                    ..Default::default()
                 }
             ))
         )
@@ -298,8 +397,7 @@ mod tests {
                 AssemblyInstruction {
                     opcode: Some(Token::Opcode(Opcode::JMP)),
                     operand1: Some(Token::Register(30)),
-                    operand2: None,
-                    operand3: None,
+                    ..Default::default()
                 }
             ))
         )
@@ -330,7 +428,7 @@ mod tests {
                 opcode: Some(Token::Opcode(Opcode::LOAD)),
                 operand1: Some(Token::Register(0)),
                 operand2: Some(Token::IntegerOperand(100)),
-                operand3: None
+                ..Default::default()
             }
         );
 
@@ -340,7 +438,7 @@ mod tests {
                 opcode: Some(Token::Opcode(Opcode::LOAD)),
                 operand1: Some(Token::Register(1)),
                 operand2: Some(Token::IntegerOperand(200)),
-                operand3: None
+                ..Default::default()
             }
         );
 
@@ -351,6 +449,7 @@ mod tests {
                 operand1: Some(Token::Register(0)),
                 operand2: Some(Token::Register(1)),
                 operand3: Some(Token::Register(2)),
+                ..Default::default()
             }
         );
 
@@ -359,8 +458,7 @@ mod tests {
             AssemblyInstruction {
                 opcode: Some(Token::Opcode(Opcode::JMP)),
                 operand1: Some(Token::Register(9)),
-                operand2: None,
-                operand3: None,
+                ..Default::default()
             }
         );
 
@@ -370,7 +468,7 @@ mod tests {
                 opcode: Some(Token::Opcode(Opcode::EQ)),
                 operand1: Some(Token::Register(0)),
                 operand2: Some(Token::Register(2)),
-                operand3: None,
+                ..Default::default()
             }
         );
 
@@ -378,9 +476,7 @@ mod tests {
             program.instructions[5],
             AssemblyInstruction {
                 opcode: Some(Token::Opcode(Opcode::HLT)),
-                operand1: None,
-                operand2: None,
-                operand3: None,
+                ..Default::default()
             }
         );
     }
