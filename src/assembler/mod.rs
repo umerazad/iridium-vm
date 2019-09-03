@@ -1,3 +1,4 @@
+use std::fmt;
 pub mod parsers;
 
 use crate::instruction::Opcode;
@@ -72,6 +73,16 @@ impl AssemblyInstruction {
         }
 
         result
+    }
+}
+
+impl fmt::Display for AssemblyInstruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "(Label: {:?} Opcode: {:?} Directive: {:?} Operand #1: {:?} Operand #2: {:?} Operand #3: {:?})",
+            self.label, self.opcode, self.directive, self.operand1, self.operand2, self.operand3
+        )
     }
 }
 
