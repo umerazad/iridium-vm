@@ -51,6 +51,10 @@ impl REPL {
                     // Update history.
                     rl.add_history_entry(line.as_str());
                     match line.as_str() {
+                        "reset" => {
+                            self.vm = VM::new();
+                            println!("Resetting VM state. Everything should be clean now.");
+                        }
                         "q" | "quit" => {
                             println!("Goodbye!");
                             process::exit(0);
