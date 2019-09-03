@@ -81,7 +81,7 @@ fn parse_directive(input: &str) -> ParseResult<AssemblyInstruction> {
         Ok((next_input, (label, directive, op1, op2, op3))) => Ok((
             next_input,
             AssemblyInstruction {
-                label: label, // opt returns an Option
+                label, // opt returns an Option
                 directive: Some(directive),
                 operand1: op1,
                 operand2: op2,
@@ -111,7 +111,7 @@ pub fn parse_instruction(input: &str) -> ParseResult<AssemblyInstruction> {
             next_input,
             AssemblyInstruction {
                 opcode: Some(opcode),
-                label: label,
+                label,
                 operand1: op1,
                 operand2: op2,
                 operand3: op3,

@@ -7,12 +7,13 @@ use rustyline::error::ReadlineError;
 use rustyline::{CompletionType, Config, Editor};
 
 #[cfg(unix)]
-static PROMPT: &'static str = "\x1b[1;32miridium >>\x1b[0m ";
+static PROMPT: &str = "\x1b[1;32miridium >>\x1b[0m ";
 
 #[cfg(windows)]
-static PROMPT: &'static str = "iridium >> ";
+static PROMPT: &str = "iridium >> ";
 
 /// Key structure for the Assembly REPL.
+#[derive(Default)]
 pub struct REPL {
     // VM instance that executes the assembly.
     vm: VM,

@@ -59,7 +59,7 @@ impl AssemblyInstruction {
             }
         };
 
-        for operand in vec![&self.operand1, &self.operand2, &self.operand3] {
+        for operand in &[&self.operand1, &self.operand2, &self.operand3] {
             match operand {
                 Some(t) => result.extend(Token::to_bytes(t)),
                 None => (),

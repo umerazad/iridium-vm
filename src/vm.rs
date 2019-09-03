@@ -90,7 +90,7 @@ impl VM {
 
                 let reg = self.next_8_bits() as usize;
                 let num = self.next_16_bits();
-                self.registers[reg] = num as i32;
+                self.registers[reg] = i32::from(num);
             }
             Opcode::ADD => {
                 let reg1 = self.read_register();
