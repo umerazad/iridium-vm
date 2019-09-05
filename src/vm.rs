@@ -1,4 +1,3 @@
-use crate::assembler::AssemblyInstruction;
 use crate::instruction::Opcode;
 
 /// Max number of logical registers in the VM.

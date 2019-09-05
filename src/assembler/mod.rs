@@ -21,8 +21,8 @@ pub enum Token {
 }
 
 impl Token {
-    pub fn to_bytes(t: &Token) -> Vec<u8> {
-        match t {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
             Token::Opcode(x) => {
                 return vec![*x as u8];
             }
