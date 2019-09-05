@@ -51,23 +51,23 @@ impl REPL {
                     // Update history.
                     rl.add_history_entry(line.as_str());
                     match line.as_str() {
-                        "reset" => {
+                        ".reset" => {
                             self.vm = VM::new();
                             println!("Resetting VM state. Everything should be clean now.");
                         }
-                        "q" | "quit" => {
+                        ".q" | ".quit" => {
                             println!("Goodbye!");
                             process::exit(0);
                         }
-                        "hs" | "history" => {
+                        ".hs" | ".history" => {
                             for cmd in rl.history().iter() {
                                 println!("{}", cmd);
                             }
                         }
-                        "r" | "registers" => {
+                        ".regs" | ".registers" => {
                             self.dump_registers();
                         }
-                        "vm" => {
+                        ".vm" => {
                             self.vm.dump_state();
                         }
                         _ => {
