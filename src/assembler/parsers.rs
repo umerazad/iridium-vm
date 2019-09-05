@@ -8,7 +8,9 @@ use nom::IResult;
 
 use nom::error::context;
 
-use crate::assembler::{AssemblyInstruction, Program, Token};
+use super::assembly_instruction::AssemblyInstruction;
+use super::program::Program;
+use super::token::Token;
 use crate::instruction::Opcode;
 
 type ParseResult<'a, T> = IResult<&'a str, T>;

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::assembler::token::Token;
+use super::token::Token;
 use crate::instruction::Opcode;
 
 // Make sure that all instructions are 4 bytes even. We are
