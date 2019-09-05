@@ -1,5 +1,7 @@
+use crate::assembler::token::Token;
 use std::fmt;
 pub mod parsers;
+pub mod token;
 
 use crate::instruction::Opcode;
 
@@ -8,35 +10,6 @@ use crate::instruction::Opcode;
 // value for a register # i.e. div $1 $2 will end up encoded as
 // div $1 $2 $0.
 const PADDING: u8 = 0xFF;
-
-/// Token represents different parts of instructions.
-#[derive(Debug, PartialEq)]
-pub enum Token {
-    Opcode(Opcode),
-    Register(u8),
-    IntegerOperand(i32),
-    LabelDeclaration(String),
-    LabelUsage(String),
-    Directive(String),
-}
-
-impl Token {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        match self {
-            Token::Opcode(x) => {
-                return vec![*x as u8];
-            }
-            Token::Register(reg) => {
-                return vec![*reg];
-            }
-            Token::IntegerOperand(v) => {
-                let bytes = (*v as u16).to_le_bytes();
-                return vec![bytes[1], bytes[0]];
-            }
-            _ => unimplemented!(),
-        }
-    }
-}
 
 /// Representation of a complete assembly instruction.
 #[derive(Debug, PartialEq, Default)]
