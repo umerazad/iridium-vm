@@ -1,3 +1,4 @@
+use crate::assembler::AssemblyInstruction;
 use crate::instruction::Opcode;
 
 /// Max number of logical registers in the VM.
@@ -47,6 +48,7 @@ impl VM {
         println!("\tEqual Flag: {}", self.equal_flag);
         println!("\tRemainder: {}", self.remainder);
         println!("\tHeap Length: {}", self.heap.len());
+        println!("\tProgram: {:?}", self.program);
     }
 
     /// Execute the VM instance to completion.

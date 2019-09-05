@@ -1,6 +1,8 @@
 use crate::assembler::parsers::parse_program;
 use crate::vm::VM;
 use std;
+use std::fs;
+use std::io::{self, Write};
 use std::process;
 
 use rustyline::error::ReadlineError;
@@ -40,6 +42,10 @@ impl REPL {
 
         println!();
         println!("Welcome to Iridium VM!");
+        println!(
+            "Current working directory: {}",
+            std::env::current_dir().unwrap().display()
+        );
         println!("Press Ctrl-D or enter \"q\" to exit.");
         println!();
 
@@ -70,6 +76,15 @@ impl REPL {
                         ".vm" => {
                             self.vm.dump_state();
                         }
+                        ".load" => {
+                            self.load_file();
+                        }
+                        ".n" | ".next" => {
+                            self.vm.run_once();
+                        }
+                        ".g" | ".go" => {
+                            self.vm.run();
+                        }
                         _ => {
                             let parsed_program = parse_program(line.as_str());
                             if parsed_program.is_err() {
@@ -88,7 +103,6 @@ impl REPL {
                         }
                     }
                 }
-
                 Err(ReadlineError::Interrupted) => {
                     println!("Ctrl-C");
                     break;
@@ -103,6 +117,31 @@ impl REPL {
                 }
             }
         }
+    }
+
+    fn load_file(&mut self) {
+        print!("Please enter file path: ");
+        // stdout is line-buffered and print! doesn't flush.
+        io::stdout().flush().expect("Failed to flush stdout.");
+
+        let mut file = String::new();
+        io::stdin()
+            .read_line(&mut file)
+            .expect("Failed to read file name.");
+
+        // read_line includes the ending newline character.
+        let file = file.trim();
+        let contents = fs::read_to_string(file).expect("Failed to read file.");
+
+        let program = match parse_program(&contents) {
+            // TODO: Deal with leftover bytes.
+            Ok((_leftover, program)) => program,
+            Err(e) => {
+                println!("Unable to parse input: {:?}", e);
+                return;
+            }
+        };
+        self.vm.add_bytes(&program.to_bytes());
     }
 
     fn dump_registers(&self) {
