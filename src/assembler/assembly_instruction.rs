@@ -24,7 +24,7 @@ pub struct AssemblyInstruction {
 }
 
 impl AssemblyInstruction {
-  pub fn to_bytes(&self, st: &SymbolTable) -> Vec<u8> {
+  pub fn to_bytes(&self, _st: &SymbolTable) -> Vec<u8> {
     let mut result = Vec::new();
     match &self.opcode {
       Some(op) => result.extend(op.to_bytes()),

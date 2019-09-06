@@ -1,4 +1,3 @@
-use crate::assembler::parsers::parse_program;
 use crate::assembler::Assembler;
 use crate::vm::VM;
 use std;

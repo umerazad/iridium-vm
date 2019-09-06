@@ -7,6 +7,7 @@ pub mod parsers;
 pub mod program;
 pub mod token;
 
+use crate::vm::VM;
 use program::Program;
 
 #[derive(Debug)]
@@ -99,5 +100,28 @@ impl Assembler {
     // Run second pass where we generate complete byte-code.
     fn run_pass2(&mut self, prog: &Program) -> Vec<u8> {
         prog.to_bytes(&self.symbol_table)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_assemble() {
+        let mut assembler = Assembler::new();
+
+        let prog_string = r##" load $0 #20
+                 load $1 #30
+                 add $0 $1 $2
+                 hlt"##;
+
+        let program = assembler.assemble(prog_string).unwrap();
+        let mut vm = VM::new();
+        vm.add_bytes(&program);
+        vm.run();
+        assert_eq!(vm.register(0), 20);
+        assert_eq!(vm.register(1), 30);
+        assert_eq!(vm.register(2), 50);
     }
 }

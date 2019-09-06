@@ -73,6 +73,11 @@ impl VM {
         self.program.extend_from_slice(v);
     }
 
+    /// Read a register's value.
+    pub fn register(&self, i: usize) -> i32 {
+        return self.registers[i];
+    }
+
     // Executes the next instruction.
     fn execute_instruction(&mut self) -> bool {
         if self.pc >= self.program.len() {
