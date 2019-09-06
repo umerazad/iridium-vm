@@ -63,6 +63,12 @@ pub enum Opcode {
     // Extend heap size: ALLOC $0
     ALOC = 17,
 
+    // Increment by 1: INC $0
+    INC = 18,
+
+    // Decrement by 1. DEC $0
+    DEC = 19,
+
     // Illegal instruction.
     IGL = 255,
 }
@@ -113,6 +119,8 @@ impl From<&str> for Opcode {
             "JEQ" => Opcode::JEQ,
             "JNEQ" => Opcode::JNEQ,
             "ALOC" => Opcode::ALOC,
+            "INC" => Opcode::INC,
+            "DEC" => Opcode::DEC,
             _ => Opcode::IGL,
         }
     }
@@ -154,6 +162,8 @@ mod tests {
         assert_eq!(Opcode::JEQ, Opcode::from(15));
         assert_eq!(Opcode::JNEQ, Opcode::from(16));
         assert_eq!(Opcode::ALOC, Opcode::from(17));
+        assert_eq!(Opcode::INC, Opcode::from(18));
+        assert_eq!(Opcode::DEC, Opcode::from(19));
     }
 
     #[test]
@@ -176,6 +186,8 @@ mod tests {
         assert_eq!(Opcode::JEQ as u8, 15);
         assert_eq!(Opcode::JNEQ as u8, 16);
         assert_eq!(Opcode::ALOC as u8, 17);
+        assert_eq!(Opcode::INC as u8, 18);
+        assert_eq!(Opcode::DEC as u8, 19);
         assert_eq!(Opcode::IGL as u8, 255);
     }
 
@@ -200,5 +212,7 @@ mod tests {
         assert_eq!(Opcode::JEQ, Opcode::from("jeq"));
         assert_eq!(Opcode::JNEQ, Opcode::from("jneq"));
         assert_eq!(Opcode::ALOC, Opcode::from("aloc"));
+        assert_eq!(Opcode::INC, Opcode::from("inc"));
+        assert_eq!(Opcode::DEC, Opcode::from("dec"));
     }
 }

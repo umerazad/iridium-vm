@@ -232,6 +232,14 @@ impl VM {
                 let new_size = self.heap.len() + self.read_register() as usize;
                 self.heap.resize(new_size, 0);
             }
+            Opcode::INC => {
+                let i = self.next_8_bits() as usize;
+                self.registers[i] += 1;
+            }
+            Opcode::DEC => {
+                let i = self.next_8_bits() as usize;
+                self.registers[i] -= 1;
+            }
             _ => {
                 println!("Unrecognized opcode. VM Terminating");
                 is_done = true;
@@ -578,6 +586,24 @@ mod tests {
         vm.program = vec![Opcode::ALOC as u8, 9, 0, 0];
         vm.run_once();
         assert_eq!(1024, vm.heap.len());
+    }
+
+    #[test]
+    fn test_inc() {
+        let mut vm = VM::new();
+        vm.registers[9] = 10;
+        vm.program = vec![Opcode::INC as u8, 9, 0, 0];
+        vm.run_once();
+        assert_eq!(11, vm.register(9));
+    }
+
+    #[test]
+    fn test_dec() {
+        let mut vm = VM::new();
+        vm.registers[9] = 22;
+        vm.program = vec![Opcode::DEC as u8, 9, 0, 0];
+        vm.run_once();
+        assert_eq!(21, vm.register(9));
     }
 
     #[test]
