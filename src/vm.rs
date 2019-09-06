@@ -1,3 +1,5 @@
+use crate::assembler;
+use crate::assembler::BIN_HEADER_LENGTH;
 use crate::opcode::Opcode;
 
 /// Max number of logical registers in the VM.
@@ -50,8 +52,24 @@ impl VM {
         println!("\tProgram: {:?}", self.program);
     }
 
+    fn verify_header(&self) -> bool {
+        self.program[0..4] == assembler::BIN_HEADER_PREFIX
+    }
+
     /// Execute the VM instance to completion.
     pub fn run(&mut self) {
+        if !self.verify_header() {
+            // TODO: Improve error handling here.
+            eprintln!("Invalid binary header. VM terminating.");
+            return;
+        } else {
+            // We've found a valid header. Set program counter if
+            // this is the initial execution.
+            if self.pc == 0 {
+                self.pc += BIN_HEADER_LENGTH;
+            }
+        }
+
         let mut is_done = false;
         while !is_done {
             is_done = self.execute_instruction();
@@ -312,6 +330,13 @@ impl VM {
 mod tests {
     use super::*;
 
+    fn get_vm() -> VM {
+        let mut vm = VM::new();
+        vm.program
+            .append(&mut assembler::Assembler::generate_header());
+        vm
+    }
+
     #[test]
     fn test_create_vm() {
         let test_vm = VM::new();
@@ -322,7 +347,7 @@ mod tests {
     fn test_hlt() {
         let mut vm = VM::new();
         vm.program = vec![Opcode::HLT as u8, 0];
-        vm.run();
+        vm.run_once();
         assert_eq!(vm.pc, 1);
     }
 
@@ -331,19 +356,19 @@ mod tests {
         let mut vm = VM::new();
         // LOAD #0 500
         vm.program = vec![Opcode::LOAD as u8, 0, 1, 244];
-        vm.run();
+        vm.run_once();
         assert_eq!(vm.registers[0], 500);
     }
 
     #[test]
     fn test_add() {
-        let mut vm = VM::new();
+        let mut vm = get_vm();
         // LOAD $0 10 -> [1, 0, 0, 10]
         // LOAD $1 10 -> [1, 1, 0, 10]
         // ADD $0 $1 $2 -> [2, 0, 1, 2]
         let load = Opcode::LOAD as u8;
         let add = Opcode::ADD as u8;
-        vm.program = vec![load, 0, 0, 10, load, 1, 0, 10, add, 0, 1, 2];
+        vm.add_bytes(&[load, 0, 0, 10, load, 1, 0, 10, add, 0, 1, 2]);
         vm.run();
         assert_eq!(vm.registers[0], 10);
         assert_eq!(vm.registers[1], 10);
@@ -352,13 +377,13 @@ mod tests {
 
     #[test]
     fn test_mul() {
-        let mut vm = VM::new();
+        let mut vm = get_vm();
         // LOAD $0 10 -> [1, 0, 0, 10]
         // LOAD $1 10 -> [1, 1, 0, 10]
         // MUL $0 $1 $2 -> [3, 0, 1, 2]
         let load = Opcode::LOAD as u8;
         let mul = Opcode::MUL as u8;
-        vm.program = vec![load, 0, 0, 10, load, 1, 0, 10, mul, 0, 1, 2];
+        vm.add_bytes(&[load, 0, 0, 10, load, 1, 0, 10, mul, 0, 1, 2]);
         vm.run();
         assert_eq!(vm.registers[0], 10);
         assert_eq!(vm.registers[1], 10);
@@ -367,13 +392,13 @@ mod tests {
 
     #[test]
     fn test_sub() {
-        let mut vm = VM::new();
+        let mut vm = get_vm();
         // LOAD $0 100 -> [1, 0, 0, 100]
         // LOAD $1 10 -> [1, 1, 0, 10]
         // SUB $0 $1 $2 -> [4, 0, 1, 2]
         let load = Opcode::LOAD as u8;
         let sub = Opcode::SUB as u8;
-        vm.program = vec![load, 0, 0, 100, load, 1, 0, 10, sub, 0, 1, 2];
+        vm.add_bytes(&[load, 0, 0, 100, load, 1, 0, 10, sub, 0, 1, 2]);
         vm.run();
         assert_eq!(vm.registers[0], 100);
         assert_eq!(vm.registers[1], 10);
@@ -382,13 +407,13 @@ mod tests {
 
     #[test]
     fn test_div() {
-        let mut vm = VM::new();
+        let mut vm = get_vm();
         // LOAD $0 21 -> [1, 0, 0, 21]
         // LOAD $1 10 -> [1, 1, 0, 10]
         // DIV $0 $1 $2 -> [5, 0, 1, 2]
         let load = Opcode::LOAD as u8;
         let div = Opcode::DIV as u8;
-        vm.program = vec![load, 0, 0, 21, load, 1, 0, 10, div, 0, 1, 2];
+        vm.add_bytes(&[load, 0, 0, 21, load, 1, 0, 10, div, 0, 1, 2]);
         vm.run();
         assert_eq!(vm.registers[0], 21);
         assert_eq!(vm.registers[1], 10);
@@ -441,7 +466,7 @@ mod tests {
     fn test_illegal_opcode() {
         let mut vm = VM::new();
         vm.program = vec![255];
-        vm.run();
+        vm.run_once();
         assert_eq!(vm.pc, 1);
     }
 

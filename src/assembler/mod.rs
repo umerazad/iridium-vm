@@ -10,6 +10,24 @@ pub mod token;
 use crate::vm::VM;
 use program::Program;
 
+/// Executable header has the following format:
+///      |---------------------------------------------------------|
+///      | Bytes[0..4] contain the 4 byte magic header. It is set  |
+///      |       to AZAD in hex i.e. 41 5A 41 44                   |
+///      |---------------------------------------------------------|
+///      | Bytes[4] Contains 1 byte version. Its set to 1 for now. |
+///      |---------------------------------------------------------|
+///      | Remaining 59 bytes are padded with zeros for now.       |
+///      |---------------------------------------------------------|
+
+pub const BIN_HEADER_LENGTH: usize = 64;
+pub const BIN_HEADER_OFFSET: usize = 0;
+
+pub const BIN_HEADER_PREFIX: [u8; 4] = [0x41, 0x5A, 0x41, 0x44];
+
+pub const BIN_VERSION_OFFSET: usize = 4; // fifth byte.
+pub const BIN_VERSION: u8 = 1;
+
 #[derive(Debug)]
 pub enum SymbolType {
     Label,
@@ -58,12 +76,31 @@ impl Assembler {
         }
     }
 
+    pub fn generate_header() -> Vec<u8> {
+        let mut header = vec![0; BIN_HEADER_LENGTH];
+
+        // Write magic number.
+        for (i, v) in BIN_HEADER_PREFIX.into_iter().enumerate() {
+            header[i] = *v;
+        }
+        header[BIN_VERSION_OFFSET] = BIN_VERSION;
+        header
+    }
+
     /// Assembles the specified program.
     pub fn assemble(&mut self, prog: &str) -> Option<Vec<u8>> {
         match parsers::parse_program(prog) {
             Ok((_leftover, program)) => {
+                // Generate header.
+                let mut executable = Assembler::generate_header();
+
+                // Generate bytecode.
                 self.run_pass1(&program);
-                Some(self.run_pass2(&program))
+                let mut bytecode = self.run_pass2(&program);
+
+                // Append the bytecode to the executable.
+                executable.append(&mut bytecode);
+                Some(executable)
             }
             Err(e) => {
                 eprintln!("Failed to assemble program. Error: {:?}", e);
