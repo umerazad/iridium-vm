@@ -11,7 +11,7 @@ use nom::error::context;
 use super::assembly_instruction::AssemblyInstruction;
 use super::program::Program;
 use super::token::Token;
-use crate::instruction::Opcode;
+use crate::opcode::Opcode;
 
 type ParseResult<'a, T> = IResult<&'a str, T>;
 

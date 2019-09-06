@@ -68,7 +68,7 @@ pub enum Opcode {
 }
 
 /// Instruction struct represents an instruction for the VM. We support the following
-/// instruction formats.
+/// instruction formats. All these instructions are 4 bytes.
 ///
 /// 1. opcode: 8bits
 /// 2. opcode: 8bits, register: 8bits
@@ -76,16 +76,6 @@ pub enum Opcode {
 /// 4. opcode: 8bits register: 8bits: operand1: 8bits: operand2: 8bits
 /// 5. opcode: 8bits register: 8bits: operand1: 16bits
 ///
-#[derive(Debug, PartialEq)]
-pub struct Instruction {
-    opcode: Opcode,
-}
-
-impl Instruction {
-    pub fn new(opcode: Opcode) -> Instruction {
-        Instruction { opcode }
-    }
-}
 
 impl From<Opcode> for u8 {
     fn from(opcode: Opcode) -> Self {
@@ -131,12 +121,6 @@ impl From<&str> for Opcode {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_create_instruction() {
-        let inst = Instruction::new(Opcode::HLT);
-        assert_eq!(inst.opcode, Opcode::HLT);
-    }
 
     #[test]
     fn test_opcode_from_u8() {

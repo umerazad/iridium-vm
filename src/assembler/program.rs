@@ -1,6 +1,6 @@
 use super::assembly_instruction::AssemblyInstruction;
 use super::token::Token;
-use crate::instruction::Opcode;
+use crate::opcode::Opcode;
 
 /// Representation of an Iridium program. Its just a collection of
 /// instructions.

@@ -1,4 +1,4 @@
-use crate::instruction::Opcode;
+use crate::opcode::Opcode;
 
 /// Token represents different parts of instructions.
 #[derive(Debug, PartialEq)]

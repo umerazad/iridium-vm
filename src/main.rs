@@ -3,9 +3,9 @@ extern crate num;
 extern crate num_derive;
 
 pub mod assembler;
-pub mod instruction;
 pub mod repl;
 pub mod vm;
+pub mod opcode;
 
 use repl::REPL;
 use structopt::StructOpt;

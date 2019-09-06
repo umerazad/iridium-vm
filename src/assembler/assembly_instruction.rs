@@ -1,7 +1,7 @@
 use std::fmt;
 
 use super::token::Token;
-use crate::instruction::Opcode;
+use crate::opcode::Opcode;
 
 // Make sure that all instructions are 4 bytes even. We are
 // intentially using 0xFF instead of 0 as '0' could be a valid

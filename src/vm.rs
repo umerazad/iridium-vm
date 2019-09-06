@@ -1,4 +1,4 @@
-use crate::instruction::Opcode;
+use crate::opcode::Opcode;
 
 /// Max number of logical registers in the VM.
 const MAX_REGISTERS: usize = 32;
