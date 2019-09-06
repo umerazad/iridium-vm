@@ -1,4 +1,5 @@
 use crate::assembler::parsers::parse_program;
+use crate::assembler::Assembler;
 use crate::vm::VM;
 use std;
 use std::fs;
@@ -15,16 +16,21 @@ static PROMPT: &str = "\x1b[1;32miridium >>\x1b[0m ";
 static PROMPT: &str = "iridium >> ";
 
 /// Key structure for the Assembly REPL.
-#[derive(Default)]
 pub struct REPL {
     // VM instance that executes the assembly.
     vm: VM,
+
+    // Assembler
+    asm: Assembler,
 }
 
 impl REPL {
     /// Create a new REPL instance.
     pub fn new() -> Self {
-        REPL { vm: VM::new() }
+        REPL {
+            vm: VM::new(),
+            asm: Assembler::new(),
+        }
     }
 
     /// Execute REPL loop.
@@ -85,21 +91,20 @@ impl REPL {
                         ".g" | ".go" => {
                             self.vm.run();
                         }
-                        _ => {
-                            let parsed_program = parse_program(line.as_str());
-                            if parsed_program.is_err() {
-                                println!(
-                                    "Unable to parse input. Error: {:?}",
-                                    parsed_program.err()
-                                );
-                                continue;
+                        ".h" | ".help" => {
+                            self.print_help();
+                        }
+                        inst => {
+                            if inst.starts_with(".") {
+                                println!("Unrecognized instruction. Use .help for detailed help.");
+                            } else {
+                                let bytecode = self
+                                    .asm
+                                    .assemble(line.as_str())
+                                    .expect("Failed to parse program.");
+                                self.vm.add_bytes(&bytecode);
+                                self.vm.run_once();
                             }
-
-                            let (_, result) = parsed_program.unwrap();
-                            let bytecode = result.to_bytes();
-                            self.vm.add_bytes(&bytecode);
-                            // Run stuff.
-                            self.vm.run_once();
                         }
                     }
                 }
@@ -119,6 +124,19 @@ impl REPL {
         }
     }
 
+    fn print_help(&self) {
+        println!("Command:  Description\n-------  ------------");
+        println!(".reset    Reset the VM state.");
+        println!(".history  See the command history.");
+        println!(".regs     Dump registers.");
+        println!(".vm       Dump VM state excluding registers.");
+        println!(".load     Load an assembly file. It prompts for the file path.");
+        println!(".n        Execute next instruction.");
+        println!(".go       Execute rest of the program.");
+        println!(".help     Print this help message.");
+        println!(".quit     Quit the REPL. You can also use Ctrl-C or Ctrl-D.");
+    }
+
     fn load_file(&mut self) {
         print!("Please enter file path: ");
         // stdout is line-buffered and print! doesn't flush.
@@ -133,15 +151,11 @@ impl REPL {
         let file = file.trim();
         let contents = fs::read_to_string(file).expect("Failed to read file.");
 
-        let program = match parse_program(&contents) {
-            // TODO: Deal with leftover bytes.
-            Ok((_leftover, program)) => program,
-            Err(e) => {
-                println!("Unable to parse input: {:?}", e);
-                return;
-            }
-        };
-        self.vm.add_bytes(&program.to_bytes());
+        let bytecode = self
+            .asm
+            .assemble(&contents)
+            .expect("Failed to assemble program.");
+        self.vm.add_bytes(&bytecode);
     }
 
     fn dump_registers(&self) {

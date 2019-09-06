@@ -228,7 +228,7 @@ impl VM {
                 self.heap.resize(new_size, 0);
             }
             _ => {
-                println!("Unrecognized opcode. Terminating");
+                println!("Unrecognized opcode. VM Terminating");
                 is_done = true;
             }
         }
