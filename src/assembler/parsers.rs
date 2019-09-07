@@ -1,9 +1,9 @@
 use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete::{alpha1, alphanumeric1, digit1};
+use nom::bytes::complete::{escaped, is_not, tag};
+use nom::character::complete::{alpha1, alphanumeric1, digit1, one_of};
 use nom::combinator::{cut, map, opt};
 use nom::multi::many1;
-use nom::sequence::{preceded, terminated, tuple};
+use nom::sequence::{delimited, preceded, terminated, tuple};
 use nom::IResult;
 
 use nom::error::context;
@@ -16,14 +16,14 @@ use crate::opcode::Opcode;
 type ParseResult<'a, T> = IResult<&'a str, T>;
 
 /// Parses opcode part of the instruction.
-pub fn parse_opcode(input: &str) -> ParseResult<Token> {
+fn parse_opcode(input: &str) -> ParseResult<Token> {
     let (next_input, result) = alpha1(input.trim())?;
     Ok((next_input, Token::Opcode(Opcode::from(result))))
 }
 
 /// Parses the register part. i.e. $0. We don't enforce the register
 /// count limit here. It'll be taken care of at the assembler level.
-pub fn parse_register(input: &str) -> ParseResult<Token> {
+fn parse_register(input: &str) -> ParseResult<Token> {
     map(
         context("register", preceded(tag("$"), cut(digit1))),
         |num: &str| Token::Register(num.parse::<u8>().unwrap()),
@@ -31,16 +31,37 @@ pub fn parse_register(input: &str) -> ParseResult<Token> {
 }
 
 /// Parses the number operand #123.
-pub fn parse_number(input: &str) -> ParseResult<Token> {
+fn parse_number(input: &str) -> ParseResult<Token> {
     map(
         context("integer", preceded(tag("#"), cut(digit1))),
         |num: &str| Token::IntegerOperand(num.parse::<i32>().unwrap()),
     )(input)
 }
 
+/// Parse quoted string literals i.e. "abc\ndef". We support the following
+/// characters to be escaped using a \ prefix
+///     \ntr
+///
+/// NOTE: For now, we don't support escaping of quote i.e. \"
+fn parse_string(input: &str) -> ParseResult<Token> {
+    let not_escaped_or_end = |s| is_not("\\\"")(s);
+
+    map(
+        context(
+            "string literal",
+            delimited(
+                tag("\""),
+                escaped(not_escaped_or_end, '\\', one_of(r#"\ntr""#)),
+                tag("\""),
+            ),
+        ),
+        |s: &str| Token::StringOperand(s.to_string()),
+    )(input.trim())
+}
+
 /// Parses an operand.
-pub fn parse_operand(input: &str) -> ParseResult<Token> {
-    alt((parse_number, parse_register))(input.trim())
+fn parse_operand(input: &str) -> ParseResult<Token> {
+    alt((parse_number, parse_register, parse_string))(input.trim())
 }
 
 /// Parses a label declaration. Labels are of the form
@@ -97,7 +118,7 @@ fn parse_directive(input: &str) -> ParseResult<AssemblyInstruction> {
 
 /// This is the high level instruction parser combinator that parses
 /// all forms of instructions.
-pub fn parse_instruction(input: &str) -> ParseResult<AssemblyInstruction> {
+fn parse_instruction(input: &str) -> ParseResult<AssemblyInstruction> {
     // Its important that the opcode only instruction is parsed as the last resort
     // given that its format matches all other types of instructions.
     let parser = tuple((
@@ -190,6 +211,22 @@ mod tests {
     fn test_parse_operand() {
         assert_eq!(parse_operand(" #99 "), Ok(("", Token::IntegerOperand(99))));
         assert_eq!(parse_operand(" $23 "), Ok(("", Token::Register(23))));
+        assert_eq!(
+            parse_operand(" \"\tabc\n\" "),
+            Ok(("", Token::StringOperand("\tabc\n".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_parse_string() {
+        assert_eq!(
+            parse_string("\"abc\""),
+            Ok(("", Token::StringOperand("abc".to_string())))
+        );
+        assert_eq!(
+            parse_string(r#""\tabc\n""#),
+            Ok(("", Token::StringOperand(r#"\tabc\n"#.to_string())))
+        );
     }
 
     #[test]
@@ -218,8 +255,7 @@ mod tests {
 
     #[test]
     fn test_parse_directive_combined() {
-        // TODO: Fix this test once we've added support for string literals.
-        let result = parse_directive("test1: .asciiz ");
+        let result = parse_directive("test1: .asciiz \"Hello, World!\"");
         assert_eq!(result.is_ok(), true);
 
         let (_, directive) = result.unwrap();
@@ -229,6 +265,7 @@ mod tests {
             AssemblyInstruction {
                 label: Some(Token::LabelDeclaration("test1".to_string())),
                 directive: Some(Token::Directive("asciiz".to_string())),
+                operand1: Some(Token::StringOperand("Hello, World!".to_string())),
                 ..Default::default()
             }
         );
