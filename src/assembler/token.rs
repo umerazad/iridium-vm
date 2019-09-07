@@ -22,8 +22,7 @@ impl Token {
                 return vec![*reg];
             }
             Token::IntegerOperand(v) => {
-                let bytes = (*v as u16).to_le_bytes();
-                return vec![bytes[1], bytes[0]];
+                return (*v as u16).to_be_bytes().to_vec();
             }
             Token::StringOperand(s) => s.as_bytes().to_vec(),
             _ => unimplemented!(),
@@ -54,6 +53,7 @@ mod tests {
 
         assert_eq!(Token::Register(9).to_bytes(), vec![9]);
 
+        // We use big-endian format to store integers.
         assert_eq!(Token::IntegerOperand(0xFFEE).to_bytes(), vec![0xFF, 0xEE]);
 
         assert_eq!(
