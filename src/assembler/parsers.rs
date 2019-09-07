@@ -254,7 +254,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_directive_combined() {
+    fn test_parse_string_directive() {
         let result = parse_directive("test1: .asciiz \"Hello, World!\"");
         assert_eq!(result.is_ok(), true);
 
@@ -269,6 +269,12 @@ mod tests {
                 ..Default::default()
             }
         );
+    }
+
+    #[test]
+    fn test_program_with_directive() {
+        let prog = ".data\nhello: .asciiz \"Howdy!\"\n.code\nhlt";
+        assert_eq!(parse_program(prog).is_ok(), true);
     }
 
     #[test]
