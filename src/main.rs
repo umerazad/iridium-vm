@@ -1,11 +1,14 @@
 extern crate num;
 #[macro_use]
 extern crate num_derive;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 
 pub mod assembler;
+pub mod opcode;
 pub mod repl;
 pub mod vm;
-pub mod opcode;
 
 use repl::REPL;
 use structopt::StructOpt;
@@ -15,6 +18,8 @@ use structopt::StructOpt;
 struct Opt {}
 
 fn main() {
+    env_logger::init();
+
     let _ = Opt::from_args();
 
     // REPL takes care of Ctrl-C/D stuff.

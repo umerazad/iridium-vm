@@ -1,7 +1,7 @@
 use std::fmt;
 
 use super::token::Token;
-use super::SymbolTable;
+use super::symbols::SymbolTable;
 use crate::opcode::Opcode;
 
 // Make sure that all instructions are 4 bytes even. We are

@@ -1,14 +1,14 @@
-use std::collections::HashMap;
-
 /// This module contains implementation of our simple two-pass assembler
 /// for the Iridium VM.
 pub mod assembly_instruction;
 pub mod parsers;
 pub mod program;
+pub mod symbols;
 pub mod token;
 
 use crate::vm::VM;
 use program::Program;
+use symbols::{SymbolInfo, SymbolTable, SymbolType};
 
 /// Executable header has the following format:
 ///      |---------------------------------------------------------|
@@ -27,30 +27,6 @@ pub const BIN_HEADER_PREFIX: [u8; 4] = [0x41, 0x5A, 0x41, 0x44];
 
 pub const BIN_VERSION_OFFSET: usize = 4; // fifth byte.
 pub const BIN_VERSION: u8 = 1;
-
-#[derive(Debug)]
-pub enum SymbolType {
-    Label,
-    Integer,
-    String,
-}
-
-#[derive(Debug)]
-pub struct SymbolInfo {
-    offset: u32,
-    symbol_type: SymbolType,
-}
-
-impl SymbolInfo {
-    fn new(offset: u32, t: SymbolType) -> Self {
-        SymbolInfo {
-            offset,
-            symbol_type: t,
-        }
-    }
-}
-
-pub type SymbolTable = HashMap<String, SymbolInfo>;
 
 #[derive(Debug, Clone)]
 pub enum AssemblerPass {
