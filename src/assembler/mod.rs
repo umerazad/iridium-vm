@@ -31,6 +31,8 @@ pub const BIN_VERSION: u8 = 1;
 #[derive(Debug)]
 pub enum SymbolType {
     Label,
+    Integer,
+    String,
 }
 
 #[derive(Debug)]
@@ -61,10 +63,64 @@ pub enum AssemblerPass {
     Second,
 }
 
+#[derive(Debug, Default)]
+pub struct Section {
+    start: Option<usize>,
+    size: Option<usize>,
+}
+
+#[derive(Debug)]
+pub enum AssemblerSection {
+    /// Code section. Start signifies the start of section
+    Code(Section),
+
+    /// Read/write data section for initialized stuff.
+    Data(Section),
+
+    Unknown,
+}
+
+impl Default for AssemblerSection {
+    fn default() -> Self {
+        AssemblerSection::Unknown
+    }
+}
+
+impl<'a> From<&'a str> for AssemblerSection {
+    fn from(s: &'a str) -> AssemblerSection {
+        match s {
+            "code" => AssemblerSection::Code(Section::default()),
+            "data" => AssemblerSection::Data(Section::default()),
+            _ => AssemblerSection::Unknown,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Assembler {
+    /// Currently active pass of our two-pass assembler.
     pass: AssemblerPass,
+
+    /// Map of symbols
     symbol_table: SymbolTable,
+
+    /// Read/write data section.
+    data: Vec<u8>,
+
+    /// Code section.
+    code: Vec<u8>,
+
+    /// List of all sections that we've seen so far. We allow multiple code/data
+    /// segments.
+    segments: Vec<AssemblerSection>,
+
+    /// Section that we are currently processing.
+    current_section: AssemblerSection,
+
+    /// Instruction that assembler is currently converting to bytecode. This is
+    /// roughly the line # of the input program and we use it to report
+    /// diagnostic messages.
+    current_instruction: u32,
 }
 
 impl Assembler {
@@ -73,6 +129,11 @@ impl Assembler {
         Assembler {
             pass: AssemblerPass::First,
             symbol_table: SymbolTable::new(),
+            data: vec![],
+            code: vec![],
+            segments: vec![],
+            current_section: AssemblerSection::Unknown,
+            current_instruction: 0,
         }
     }
 
@@ -90,6 +151,8 @@ impl Assembler {
     /// Assembles the specified program.
     pub fn assemble(&mut self, prog: &str) -> Option<Vec<u8>> {
         match parsers::parse_program(prog) {
+            // TODO: Deal with _leftover. This should be an error if the
+            // parser can't fully consume the program.
             Ok((_leftover, program)) => {
                 // Generate header.
                 let mut executable = Assembler::generate_header();
