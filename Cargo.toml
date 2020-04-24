@@ -9,7 +9,7 @@ license = "MIT"
 
 [dependencies]
 structopt = "0.3.5"
-rustyline = "5.0.4"
+rustyline = "6.1.2"
 nom = "5.0.1"
 num-derive = "0.3"
 num-traits = "0.2"
